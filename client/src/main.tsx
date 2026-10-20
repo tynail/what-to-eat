@@ -42,6 +42,7 @@ import { Login } from "./features/access/Login";
 import { blankIngredient, blankMeal, blankRecipe, units } from "./features/catalog/factories";
 import { monday, pretty } from "./features/planning/dates";
 import { Modal } from "./shared/ui/Modal";
+import { CookingDetail } from "./shared/cooking/CookingDetail";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
@@ -275,7 +276,7 @@ function Library({ kind }: { kind: "recipes" | "meals" }) {
           close={() => setEditing(null)}
         />
       )}
-      {view && <Detail meal={view} close={() => setView(null)} />}
+      {view && <CookingDetail meal={view} close={() => setView(null)} />}
     </>
   );
 }
@@ -566,37 +567,6 @@ function Editor({
           </div>
         </fieldset>
       </form>
-    </Modal>
-  );
-}
-function Detail({ meal, close }: { meal: Snapshot; close: () => void }) {
-  return (
-    <Modal title={meal.name} close={close}>
-      <p className="muted">{meal.description}</p>
-      {meal.recipes.map((r, index) => (
-        <section className="recipe-detail" key={index}>
-          <p className="eyebrow">{r.servings} SERVINGS</p>
-          <h3>{r.name}</h3>
-          <p>{r.description}</p>
-          <h4>Ingredients</h4>
-          <ul>
-            {r.ingredients.map((i, n) => (
-              <li key={n}>
-                {i.quantity == null ? "" : Number(i.quantity.toFixed(3))}{" "}
-                {i.unit === "unspecified" ? "" : i.unit}{" "}
-                <strong>{i.name}</strong>
-                {i.note && ` — ${i.note}`}
-              </li>
-            ))}
-          </ul>
-          <h4>How to make it</h4>
-          <ol>
-            {r.steps.map((s, n) => (
-              <li key={n}>{s}</li>
-            ))}
-          </ol>
-        </section>
-      ))}
     </Modal>
   );
 }
@@ -904,7 +874,7 @@ function Planner() {
           <p className="muted">Saved weeks will find a home here.</p>
         )}
       </section>
-      {view && <Detail meal={view} close={() => setView(null)} />}
+      {view && <CookingDetail meal={view} close={() => setView(null)} />}
     </>
   );
 }
