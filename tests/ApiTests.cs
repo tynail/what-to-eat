@@ -87,6 +87,28 @@ public class ApiTests
     }
 
     [Fact]
+    public async Task NewPasswordResetLinkRevokesEarlierUnusedLink()
+    {
+        using var factory = new KitchenFactory(); using var admin = await factory.Login(); using var guest = factory.CreateClient(); await KitchenFactory.Csrf(guest);
+        using var scope = factory.Services.CreateScope(); var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var user = new User { UserName = "member" + Guid.NewGuid().ToString("N") };
+        Assert.True((await users.CreateAsync(user, "Testing!Password42")).Succeeded);
+        Assert.True((await users.AddToRoleAsync(user, "Member")).Succeeded);
+
+        async Task<string> IssueReset()
+        {
+            var response = await admin.PostAsync($"/api/admin/users/{user.Id}/reset", null);
+            response.EnsureSuccessStatusCode();
+            return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("path").GetString()!.Split(':')[1];
+        }
+
+        var earlier = await IssueReset();
+        var current = await IssueReset();
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(earlier, "", "Changed!Password42"))).StatusCode);
+        (await guest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(current, "", "Changed!Password42"))).EnsureSuccessStatusCode();
+    }
+
+    [Fact]
     public async Task UnknownAccessTokenKindsFailClosed()
     {
         using var f = new KitchenFactory(); using var admin = await f.Login(); using var guest = f.CreateClient(); await KitchenFactory.Csrf(guest);
