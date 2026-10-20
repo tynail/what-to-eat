@@ -87,6 +87,26 @@ public class ApiTests
     }
 
     [Fact]
+    public async Task ConcurrentRedemptionAllowsOnlyOneUseOfAnInvite()
+    {
+        using var factory = new KitchenFactory();
+        using var admin = await factory.Login();
+        using var firstGuest = factory.CreateClient();
+        using var secondGuest = factory.CreateClient();
+        await KitchenFactory.Csrf(firstGuest);
+        await KitchenFactory.Csrf(secondGuest);
+
+        var issued = await admin.PostAsync("/api/admin/invites", null);
+        issued.EnsureSuccessStatusCode();
+        var token = (await issued.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("path").GetString()!.Split(':')[1];
+        var first = firstGuest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(token, "first" + Guid.NewGuid().ToString("N"), "Testing!Password42"));
+        var second = secondGuest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(token, "second" + Guid.NewGuid().ToString("N"), "Testing!Password42"));
+
+        var statuses = (await Task.WhenAll(first, second)).Select(response => response.StatusCode).Order().ToArray();
+        Assert.Equal([HttpStatusCode.OK, HttpStatusCode.BadRequest], statuses);
+    }
+
+    [Fact]
     public async Task NewPasswordResetLinkRevokesEarlierUnusedLink()
     {
         using var factory = new KitchenFactory(); using var admin = await factory.Login(); using var guest = factory.CreateClient(); await KitchenFactory.Csrf(guest);

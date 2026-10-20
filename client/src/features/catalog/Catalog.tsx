@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Plus, Utensils } from "lucide-react";
-import { api, type Ingredient, type Meal, type Recipe, type Snapshot } from "../../api";
+import { api, apiParsed, parseMeals, parseRecipes, parseSnapshot, type Ingredient, type Meal, type Recipe, type Snapshot } from "../../api";
 import { blankIngredient, blankMeal, blankRecipe, units } from "./factories";
 import { useAction } from "../../shared/ui/action";
 import { Empty, ErrorBox, Header } from "../../shared/ui/page";
@@ -14,11 +14,11 @@ function isRecipe(value: Recipe | Meal): value is Recipe {
 export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
   const recipes = useQuery({
     queryKey: ["recipes"],
-    queryFn: () => api<Recipe[]>("/recipes"),
+    queryFn: () => apiParsed("/recipes", parseRecipes),
   });
   const meals = useQuery({
     queryKey: ["meals"],
-    queryFn: () => api<Meal[]>("/meals"),
+    queryFn: () => apiParsed("/meals", parseMeals),
   });
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Recipe | Meal | null>(null);
@@ -118,7 +118,7 @@ export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
                                   { ...item, recipeId: item.id },
                                 ],
                               }
-                            : await api<Snapshot>(`/meals/${item.id}/snapshot`),
+                            : await apiParsed(`/meals/${item.id}/snapshot`, parseSnapshot),
                         );
                       })
                     }

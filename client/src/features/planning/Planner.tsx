@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, Leaf, Shuffle } from "lucide-react";
-import { api, type Meal, type Plan, type Snapshot } from "../../api";
+import { api, apiParsed, parseMeals, parsePlans, parseSnapshot, parseSnapshots, type Snapshot } from "../../api";
 import { useAction } from "../../shared/ui/action";
 import { Empty, ErrorBox, Header } from "../../shared/ui/page";
 import { CookingDetail } from "../../shared/cooking/CookingDetail";
@@ -11,11 +11,11 @@ import { beginDraft, type PlanDraft } from "./draft";
 export function Planner() {
   const meals = useQuery({
     queryKey: ["meals"],
-    queryFn: () => api<Meal[]>("/meals"),
+    queryFn: () => apiParsed("/meals", parseMeals),
   });
   const plans = useQuery({
     queryKey: ["plans"],
-    queryFn: () => api<Plan[]>("/plans"),
+    queryFn: () => apiParsed("/plans", parsePlans),
   });
   const qc = useQueryClient();
   const [week, setWeek] = useState(monday());
@@ -117,7 +117,7 @@ export function Planner() {
             onClick={() =>
               void action.run(async () =>
                 change(
-                  await api<Snapshot[]>("/planner/generate", "POST", {
+                  await apiParsed("/planner/generate", parseSnapshots, "POST", {
                     count,
                     excludedIds: excluded,
                   }),
@@ -198,8 +198,9 @@ export function Planner() {
                 disabled={action.busy}
                 onClick={() =>
                   void action.run(async () => {
-                    const next = await api<Snapshot>(
+                    const next = await apiParsed(
                       "/planner/reroll",
+                      parseSnapshot,
                       "POST",
                       {
                         selectedIds: selection.map((s) => s.mealId),
@@ -221,7 +222,7 @@ export function Planner() {
                   const id = e.target.value;
                   if (id)
                     void action.run(async () => {
-                      const next = await api<Snapshot>(`/meals/${id}/snapshot`);
+                      const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);
                       change(selection.map((s, n) => (n === i ? next : s)));
                     });
                 }}

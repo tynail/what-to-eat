@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { BrowserRouter, NavLink, Routes, Route, Navigate } from "react-router-dom";
 import { Leaf, CalendarDays, BookOpen, Utensils, Settings as SettingsIcon } from "lucide-react";
-import { api, type Me } from "../api";
+import { apiParsed, parseMe } from "../api";
 import { Settings } from "../features/settings/Settings";
 import { Login } from "../features/access/Login";
 import { Catalog } from "../features/catalog/Catalog";
 import { Planner } from "../features/planning/Planner";
 
 export function App() {
-  const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/auth/me") });
+  const me = useQuery({ queryKey: ["me"], queryFn: () => apiParsed("/auth/me", parseMe) });
   if (location.pathname === "/join") return <Login join />;
   if (me.isPending)
     return <p className="loading" role="status">Opening your kitchen…</p>;
