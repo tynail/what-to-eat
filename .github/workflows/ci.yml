@@ -15,6 +15,7 @@ jobs:
           cache-dependency-path: client/package-lock.json
       - run: dotnet restore tests --configfile NuGet.Config
       - run: dotnet test tests --no-restore
+      - run: pwsh -File scripts/check-boundaries.ps1
       - run: npm ci --prefix client
       - run: npm run build --prefix client
       - run: mkdir -p server/wwwroot && cp -r client/dist/* server/wwwroot/
