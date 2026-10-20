@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace MealPlanner.Tests;
@@ -15,7 +16,12 @@ namespace MealPlanner.Tests;
 public class KitchenFactory : WebApplicationFactory<Program>
 {
     public string DataPath { get; } = Path.Combine(Path.GetTempPath(), "mealplanner-tests-" + Guid.NewGuid());
-    protected override void ConfigureWebHost(IWebHostBuilder builder) { builder.UseEnvironment("Development"); builder.UseSetting("DataDirectory", DataPath); }
+    public TestClock Clock { get; } = new();
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Development"); builder.UseSetting("DataDirectory", DataPath);
+        builder.ConfigureServices(services => { services.RemoveAll<TimeProvider>(); services.AddSingleton<TimeProvider>(Clock); });
+    }
     public async Task<HttpClient> Login(bool admin = true)
     {
         var client = CreateClient(new() { AllowAutoRedirect = false });
@@ -27,6 +33,13 @@ public class KitchenFactory : WebApplicationFactory<Program>
     }
     public static async Task Csrf(HttpClient c) { c.DefaultRequestHeaders.Remove("X-CSRF-TOKEN"); var token = await c.GetFromJsonAsync<JsonElement>("/api/auth/csrf"); c.DefaultRequestHeaders.Add("X-CSRF-TOKEN", token.GetProperty("token").GetString()); }
     protected override void Dispose(bool disposing) { base.Dispose(disposing); Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools(); if (Directory.Exists(DataPath)) Directory.Delete(DataPath, true); }
+}
+
+public sealed class TestClock : TimeProvider
+{
+    public DateTimeOffset Current { get; private set; } = new(2026, 9, 1, 12, 0, 0, TimeSpan.Zero);
+    public override DateTimeOffset GetUtcNow() => Current;
+    public void Advance(TimeSpan duration) => Current += duration;
 }
 public class ApiTests
 {
@@ -69,7 +82,7 @@ public class ApiTests
         using var scope = f.Services.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<AppDb>(); var user = await db.Users.SingleAsync(u => u.UserName == "newmember");
         var reset = await Issue($"/api/admin/users/{user.Id}/reset"); var resetInput = new RedeemInput(reset, "", "Changed!Password42");
         (await guest.PostAsJsonAsync("/api/auth/redeem", resetInput)).EnsureSuccessStatusCode(); Assert.Equal(HttpStatusCode.BadRequest, (await guest.PostAsJsonAsync("/api/auth/redeem", resetInput)).StatusCode);
-        var expired = await Issue("/api/admin/invites"); await db.AccessTokens.Where(t => t.UsedAt == null).ExecuteUpdateAsync(s => s.SetProperty(t => t.ExpiresAt, DateTime.UtcNow.AddMinutes(-1)));
+        var expired = await Issue("/api/admin/invites"); f.Clock.Advance(TimeSpan.FromHours(49));
         Assert.Equal(HttpStatusCode.BadRequest, (await guest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(expired, "expired", "Testing!Password42"))).StatusCode);
     }
 
