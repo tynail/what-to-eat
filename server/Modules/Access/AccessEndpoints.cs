@@ -40,13 +40,13 @@ public static class AccessEndpoints
 
         var admin = app.MapGroup("/api/admin").RequireAuthorization(policy => policy.RequireRole("Admin"));
         admin.MapGet("/users", async (AppDb db) => await db.Users.Where(user => user.HouseholdId == 1).Select(user => new { user.Id, username = user.UserName, user.Disabled }).ToListAsync());
-        admin.MapPost("/invites", async (AppDb db) => await Issue(db, "invite", null));
-        admin.MapPost("/users/{id}/reset", async (string id, AppDb db) =>
-            await db.Users.AnyAsync(user => user.Id == id && user.HouseholdId == 1 && !user.Disabled) ? await Issue(db, "reset", id) : Results.NotFound());
+        admin.MapPost("/invites", async (AppDb db, TimeProvider clock) => await Issue(db, clock, "invite", null));
+        admin.MapPost("/users/{id}/reset", async (string id, AppDb db, TimeProvider clock) =>
+            await db.Users.AnyAsync(user => user.Id == id && user.HouseholdId == 1 && !user.Disabled) ? await Issue(db, clock, "reset", id) : Results.NotFound());
         admin.MapPost("/users/{id}/toggle", Toggle);
     }
 
-    static async Task<IResult> Redeem(RedeemInput input, AppDb db, UserManager<User> users)
+    static async Task<IResult> Redeem(RedeemInput input, AppDb db, UserManager<User> users, TimeProvider clock)
     {
         if (string.IsNullOrEmpty(input.Password) || input.Password.Length > 1024)
             throw new ArgumentException("Password required, maximum 1024 characters.");
@@ -54,7 +54,7 @@ public static class AccessEndpoints
             return Results.Problem(statusCode: 400, detail: "Invalid or expired link.");
 
         await using var transaction = await db.Database.BeginTransactionAsync();
-        var now = DateTime.UtcNow;
+        var now = clock.GetUtcNow().UtcDateTime;
         var token = await db.AccessTokens.SingleOrDefaultAsync(item => item.Hash == Hash(input.Token) && item.UsedAt == null && item.ExpiresAt > now);
         if (token is null) return Results.Problem(statusCode: 400, detail: "Invalid or expired link.");
         if (await db.AccessTokens.Where(item => item.Id == token.Id && item.UsedAt == null).ExecuteUpdateAsync(setter => setter.SetProperty(item => item.UsedAt, now)) != 1)
@@ -93,13 +93,14 @@ public static class AccessEndpoints
         return Results.NoContent();
     }
 
-    static async Task<IResult> Issue(AppDb db, string kind, string? userId)
+    static async Task<IResult> Issue(AppDb db, TimeProvider clock, string kind, string? userId)
     {
         var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        var expiry = DateTime.UtcNow.AddHours(kind == "invite" ? 48 : 1);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var expiry = now.AddHours(kind == "invite" ? 48 : 1);
         await using var transaction = await db.Database.BeginTransactionAsync();
         if (userId is not null)
-            await db.AccessTokens.Where(token => token.UserId == userId && token.UsedAt == null).ExecuteUpdateAsync(setter => setter.SetProperty(token => token.UsedAt, DateTime.UtcNow));
+            await db.AccessTokens.Where(token => token.UserId == userId && token.UsedAt == null).ExecuteUpdateAsync(setter => setter.SetProperty(token => token.UsedAt, now));
         db.AccessTokens.Add(new() { Hash = Hash(raw), Kind = kind, UserId = userId, ExpiresAt = expiry });
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
