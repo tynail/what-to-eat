@@ -41,6 +41,7 @@ import { Settings } from "./features/settings/Settings";
 import { Login } from "./features/access/Login";
 import { blankIngredient, blankMeal, blankRecipe, units } from "./features/catalog/factories";
 import { monday, pretty } from "./features/planning/dates";
+import { Modal } from "./shared/ui/Modal";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
@@ -276,38 +277,6 @@ function Library({ kind }: { kind: "recipes" | "meals" }) {
       )}
       {view && <Detail meal={view} close={() => setView(null)} />}
     </>
-  );
-}
-function Modal({
-  title,
-  close,
-  children,
-}: {
-  title: string;
-  close: () => void;
-  children: React.ReactNode;
-}) {
-  const ref = React.useRef<HTMLDialogElement>(null);
-  React.useEffect(() => {
-    ref.current?.showModal();
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      onCancel={(e) => {
-        e.preventDefault();
-        close();
-      }}
-      aria-label={title}
-    >
-      <div className="modal-head">
-        <h2>{title}</h2>
-        <button type="button" aria-label="Close dialog" onClick={close}>
-          ×
-        </button>
-      </div>
-      {children}
-    </dialog>
   );
 }
 function Editor({
