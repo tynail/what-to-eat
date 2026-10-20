@@ -39,60 +39,15 @@ import { useAction } from "./shared/ui/action";
 import { Empty, ErrorBox, Header } from "./shared/ui/page";
 import { Settings } from "./features/settings/Settings";
 import { Login } from "./features/access/Login";
+import { blankIngredient, blankMeal, blankRecipe, units } from "./features/catalog/factories";
+import { monday, pretty } from "./features/planning/dates";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
 if (location.pathname === "/join")
   history.replaceState(null, "", location.pathname);
-const units = [
-  "count",
-  "g",
-  "kg",
-  "oz",
-  "lb",
-  "ml",
-  "l",
-  "tsp",
-  "tbsp",
-  "cup",
-  "unspecified",
-];
-const blankIngredient = (): Ingredient => ({
-  name: "",
-  quantity: 1,
-  unit: "count",
-  note: "",
-});
-const blankRecipe = (): Recipe => ({
-  id: 0,
-  version: "",
-  name: "",
-  description: "",
-  servings: 2,
-  steps: [""],
-  ingredients: [blankIngredient()],
-});
-const blankMeal = (): Meal => ({
-  id: 0,
-  version: "",
-  name: "",
-  description: "",
-  recipes: [],
-});
 function isRecipe(value: Recipe | Meal): value is Recipe {
   return "ingredients" in value;
-}
-function monday(value = new Date()) {
-  const d = new Date(value);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function pretty(date: string) {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("en", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 function App() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/auth/me") });
