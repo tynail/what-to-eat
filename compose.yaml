@@ -1,0 +1,51 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTPS_PORT: 443
+      AllowedHosts: ${DOMAIN:?Set DOMAIN in .env}
+      ProxyAddress: 172.30.42.2
+    volumes:
+      - kitchen-data:/data
+    networks:
+      kitchen:
+        ipv4_address: 172.30.42.3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      kitchen:
+        ipv4_address: 172.30.42.2
+    depends_on: [app]
+  backup:
+    image: python:3.13-alpine
+    profiles: [tools]
+    user: "1654:1654"
+    volumes:
+      - kitchen-data:/data
+      - ./backups:/backups
+      - ./scripts/backup.py:/backup.py:ro
+    entrypoint: ["python", "/backup.py"]
+volumes:
+  kitchen-data:
+  caddy-data:
+  caddy-config:
+networks:
+  kitchen:
+    ipam:
+      config:
+        - subnet: 172.30.42.0/24

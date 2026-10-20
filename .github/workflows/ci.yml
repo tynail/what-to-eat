@@ -1,0 +1,42 @@
+name: Verify
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: dotnet restore tests --configfile NuGet.Config
+      - run: dotnet test tests --no-restore
+      - run: npm ci --prefix client
+      - run: npm run build --prefix client
+      - run: mkdir -p server/wwwroot && cp -r client/dist/* server/wwwroot/
+      - run: npx playwright install --with-deps chromium
+        working-directory: client
+      - name: Start disposable browser fixture
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          DataDirectory: ${{ runner.temp }}/kitchen-e2e
+          BOOTSTRAP_USERNAME: e2eadmin
+          BOOTSTRAP_PASSWORD: LocalOnly!Test42
+        run: |
+          dotnet run --project server --no-build --no-launch-profile -- bootstrap-admin
+          dotnet run --project server --no-build --no-launch-profile --urls http://127.0.0.1:5080 > "$RUNNER_TEMP/kitchen.log" 2>&1 &
+          for i in $(seq 1 30); do curl --fail http://127.0.0.1:5080/health && break; sleep 1; done
+      - run: npm run test:e2e --prefix client
+      - run: docker compose config --quiet
+        env:
+          DOMAIN: meals.example.com
+      - run: docker build -t weekly-table:test .
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: client/test-results/

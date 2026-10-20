@@ -1,0 +1,13 @@
+.local/
+**/bin/
+**/obj/
+**/data/
+**/node_modules/
+**/dist/
+**/wwwroot/
+**/test-results/
+**/playwright-report/
+*.tsbuildinfo
+.env
+backups/
+*.db*

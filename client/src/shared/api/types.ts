@@ -1,0 +1,9 @@
+export type Ingredient = { name: string; quantity: number | null; unit: string; note: string };
+export type Recipe = { id: number; version: string; name: string; description: string; servings: number; steps: string[]; ingredients: Ingredient[] };
+export type MealRecipe = { recipeId: number; servings: number; name?: string };
+export type Meal = { id: number; version: string; name: string; description: string; recipes: MealRecipe[] };
+export type SnapshotRecipe = Omit<Recipe, "id" | "version"> & { recipeId: number };
+export type Snapshot = { mealId: number; name: string; description: string; recipes: SnapshotRecipe[] };
+export type Plan = { id: number; week: string; version: string; meals: Snapshot[] };
+export type Me = { id: string; username: string; isAdmin: boolean };
+export type HouseholdUser = { id: string; username: string; disabled: boolean };
