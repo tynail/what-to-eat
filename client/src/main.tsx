@@ -41,6 +41,7 @@ import { Settings } from "./features/settings/Settings";
 import { Login } from "./features/access/Login";
 import { blankIngredient, blankMeal, blankRecipe, units } from "./features/catalog/factories";
 import { monday, pretty } from "./features/planning/dates";
+import { beginDraft, type PlanDraft } from "./features/planning/draft";
 import { Modal } from "./shared/ui/Modal";
 import { CookingDetail } from "./shared/cooking/CookingDetail";
 const queryClient = new QueryClient({
@@ -583,15 +584,15 @@ function Planner() {
   const [week, setWeek] = useState(monday());
   const [count, setCount] = useState(5);
   const [excluded, setExcluded] = useState<number[]>([]);
-  const [draft, setDraft] = useState<Snapshot[] | null>(null);
-  const [baseVersion, setBaseVersion] = useState<string | null>(null);
+  const [draftState, setDraftState] = useState<PlanDraft>({ kind: "saved" });
   const [view, setView] = useState<Snapshot | null>(null);
   const action = useAction();
   const saved = plans.data?.find((p) => p.week === week);
+  const draft = draftState.kind === "draft" ? draftState.meals : null;
+  const baseVersion = draftState.kind === "draft" ? draftState.baseVersion : null;
   const selection = draft ?? saved?.meals ?? [];
   function change(items: Snapshot[]) {
-    if (draft === null) setBaseVersion(saved?.version || null);
-    setDraft(items);
+    setDraftState(current => beginDraft(current, items, saved?.version));
   }
   return (
     <>
@@ -656,8 +657,7 @@ function Planner() {
                   (!draft || confirm("Discard unsaved selection?"))
                 ) {
                   setWeek(monday(new Date(`${e.target.value}T12:00:00`)));
-                  setDraft(null);
-                  setBaseVersion(null);
+                  setDraftState({ kind: "saved" });
                 }
               }}
             />
@@ -820,14 +820,13 @@ function Planner() {
                     version: baseVersion,
                   });
                   await qc.invalidateQueries({ queryKey: ["plans"] });
-                  setDraft(null);
-                  setBaseVersion(null);
+                  setDraftState({ kind: "saved" });
                 });
             }}
           >
             Save week <ArrowRight size={16} />
           </button>
-          <button onClick={() => setDraft(null)}>Discard preview</button>
+          <button onClick={() => setDraftState({ kind: "saved" })}>Discard preview</button>
         </div>
       )}
       {saved && (
@@ -841,7 +840,7 @@ function Planner() {
                   `/plans/${saved.id}?version=${saved.version}`,
                   "DELETE",
                 );
-                setDraft(null);
+                setDraftState({ kind: "saved" });
                 await qc.invalidateQueries({ queryKey: ["plans"] });
               });
           }}
@@ -859,7 +858,7 @@ function Planner() {
                 onClick={() => {
                   if (!draft || confirm("Discard unsaved selection?")) {
                     setWeek(p.week);
-                    setDraft(null);
+                    setDraftState({ kind: "saved" });
                   }
                 }}
               >
