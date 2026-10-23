@@ -12,11 +12,13 @@ function isRecipe(value: Recipe | Meal): value is Recipe {
   return "ingredients" in value;
 }
 
+/** Converts a recipe for the cooking view, replacing its ID with `recipeId` and omitting its version. */
 function recipeSnapshot(recipe: Recipe): SnapshotRecipe {
   const { id, version, ...snapshot } = recipe;
   return { ...snapshot, recipeId: id };
 }
 
+/** Displays the requested collection with name search, cooking previews, and create, edit, and delete actions. */
 export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
   const recipes = useQuery({
     queryKey: ["recipes"],
@@ -33,6 +35,11 @@ export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
   const qc = useQueryClient();
   const recipeMode = kind === "recipes";
   const result = recipeMode ? recipes : meals;
+  /**
+   * Submits the editor's input, including its version when updating, then invalidates
+   * the collection (and meals after a recipe change) and closes the editor.
+   * Request and invalidation errors propagate to the editor's submission handler.
+   */
   async function save(editor: EditorState) {
     const collection = editor.kind === "recipe" ? "recipes" : "meals";
     if (editor.mode === "new") {

@@ -30,10 +30,29 @@ async function requestCsrf(): Promise<string> {
   return csrfRequest;
 }
 
+/**
+ * Sends a request to `/api` with same-origin credentials and returns parsed JSON,
+ * or `undefined` for an empty response. Mutations acquire and send a CSRF token.
+ *
+ * @param path - API path including the leading slash, without the `/api` prefix.
+ * @param options - Defaults to GET; mutation bodies are JSON-serialized when supplied.
+ * @throws {ApiError} For unsuccessful HTTP responses, an invalid CSRF token response,
+ * or invalid JSON in the requested response. Network, serialization, response-reading,
+ * and CSRF JSON parsing errors propagate unchanged.
+ */
 export async function api(path: string, options: ApiRequestOptions = {}): Promise<unknown> {
   return request(path, options);
 }
 
+/**
+ * Sends a request using {@link api}'s options and response handling, then parses its result.
+ *
+ * @param path - API path including the leading slash, without the `/api` prefix.
+ * @param parse - Synchronous parser; receives `undefined` for an empty response.
+ * @returns The parser's result.
+ * @throws {ApiError} With status 502 if the parser throws; the original parser error
+ * is replaced. Request errors propagate unchanged, as described in {@link api}.
+ */
 export async function apiParsed<T>(
   path: string,
   parse: (value: unknown) => T,
@@ -47,6 +66,17 @@ export async function apiParsed<T>(
   }
 }
 
+/**
+ * Performs the shared API request, returning parsed JSON or `undefined` for an empty body.
+ * Uses same-origin credentials and a cached or newly fetched CSRF token for mutations;
+ * a 400 response from the requested endpoint clears the cached token without retrying.
+ *
+ * @param path - Path appended to `/api`, including the leading slash.
+ * @param options - Defaults to GET when no method is supplied; serializes a supplied body as JSON.
+ * @throws {ApiError} For unsuccessful HTTP responses, an invalid CSRF token response,
+ * or invalid JSON from the requested endpoint. Network, serialization, response-reading,
+ * and CSRF JSON parsing errors propagate unchanged.
+ */
 async function request(path: string, options: ApiRequestOptions): Promise<unknown> {
   const method = options.method ?? "GET";
   const body = "body" in options ? options.body : undefined;

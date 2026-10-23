@@ -5,11 +5,16 @@ import { api, apiParsed, parseHouseholdUsers, parseLinkResponse, resetCsrf, type
 import { useAction } from "../../shared/ui/action";
 import { ErrorBox, Header } from "../../shared/ui/page";
 
+/** Displays the current account and sign-out action, plus household access controls for admins. */
 export function Settings({ me }: { me: Me }) {
   const queryClient = useQueryClient();
   const users = useQuery({ queryKey: ["users"], queryFn: () => apiParsed("/admin/users", parseHouseholdUsers), enabled: me.isAdmin });
   const action = useAction();
   const [link, setLink] = useState("");
+  /**
+   * Creates an invite or reset link at the supplied API path and displays it using
+   * the current origin. Request and response-parsing errors propagate to the action handler.
+   */
   async function issue(path: string) {
     const result = await apiParsed(path, parseLinkResponse, { method: "POST" });
     setLink(`${location.origin}${result.path}`);

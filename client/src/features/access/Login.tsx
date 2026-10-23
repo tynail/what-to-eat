@@ -10,6 +10,11 @@ type AccessLink =
   | { kind: "reset"; token: string }
   | { kind: "invalid" };
 
+/**
+ * Parses a location hash such as `#invite:token` or `#reset:token` without decoding it.
+ * Expects the leading `#` but does not validate it. Returns `invalid` for an unknown
+ * kind, missing separator, empty token, or token containing another colon.
+ */
 function parseAccessLink(fragment: string): AccessLink {
   const separator = fragment.indexOf(":");
   if (separator < 0) return { kind: "invalid" };
@@ -24,6 +29,12 @@ function parseAccessLink(fragment: string): AccessLink {
 
 const accessLink = parseAccessLink(location.hash);
 
+/**
+ * Renders sign-in, or invite/password-reset redemption when `join` is true.
+ * Redemption uses the hash captured when this module loaded and disables submission
+ * for invalid links. Submission errors are displayed in the form; successful sign-in
+ * clears the CSRF cache and invalidates the current-user query.
+ */
 export function Login({ join = false }: { join?: boolean }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

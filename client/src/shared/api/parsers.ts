@@ -27,6 +27,10 @@ function integer(value: unknown): number {
   return result;
 }
 
+/**
+ * Accepts only literal boolean values without coercion.
+ * @throws {Error} If the value is not a boolean.
+ */
 function boolean(value: unknown): boolean {
   if (typeof value !== "boolean") throw new Error("boolean expected");
   return value;
@@ -36,6 +40,10 @@ function isIngredientUnit(value: string): value is IngredientUnit {
   return ingredientUnits.some(unit => unit === value);
 }
 
+/**
+ * Accepts an exact, case-sensitive member of `ingredientUnits`.
+ * @throws {Error} If the value is not a string or is an unsupported unit.
+ */
 function ingredientUnit(value: unknown): IngredientUnit {
   const unit = string(value);
   if (!isIngredientUnit(unit)) throw new Error("ingredient unit expected");
@@ -47,6 +55,11 @@ function array(value: unknown): unknown[] {
   return value;
 }
 
+/**
+ * Parses an ingredient with a supported unit and a finite or null quantity.
+ * Quantity may be null for any unit; positivity and nonempty names are not checked.
+ * @throws {Error} If the object or any required field fails validation.
+ */
 function ingredient(value: unknown): Ingredient {
   const row = object(value);
   return { name: string(row.name), quantity: row.quantity === null ? null : number(row.quantity), unit: ingredientUnit(row.unit), note: string(row.note) };
@@ -57,6 +70,11 @@ function recipe(value: unknown): Recipe {
   return { id: integer(row.id), version: string(row.version), name: string(row.name), description: string(row.description), servings: number(row.servings), steps: array(row.steps).map(string), ingredients: array(row.ingredients).map(ingredient) };
 }
 
+/**
+ * Parses a meal's recipe reference, requiring an integer ID, finite servings,
+ * and a string name (which may be empty).
+ * @throws {Error} If the object or any required field fails validation.
+ */
 function mealRecipe(value: unknown): MealRecipeSummary {
   const row = object(value);
   return { recipeId: integer(row.recipeId), servings: number(row.servings), name: string(row.name) };
@@ -82,11 +100,19 @@ function plan(value: unknown): Plan {
   return { id: integer(row.id), week: string(row.week), version: string(row.version), meals: array(row.meals).map(snapshot) };
 }
 
+/**
+ * Parses a household user, requiring a boolean `disabled` field without coercion.
+ * @throws {Error} If the object or any required field fails validation.
+ */
 function householdUser(value: unknown): HouseholdUser {
   const row = object(value);
   return { id: string(row.id), username: string(row.username), disabled: boolean(row.disabled) };
 }
 
+/**
+ * Parses the current user's identity, requiring a boolean `isAdmin` without coercion.
+ * @throws {Error} If the object or any required field fails validation.
+ */
 export const parseMe = (value: unknown): Me => {
   const row = object(value);
   return { id: string(row.id), username: string(row.username), isAdmin: boolean(row.isAdmin) };
