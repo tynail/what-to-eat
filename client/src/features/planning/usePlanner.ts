@@ -58,10 +58,10 @@ export function usePlanner() {
 
   /**
    * Requests a draft using the current count and excluded meal IDs.
-   * Ignores the result after a discard or accepted week selection; failures populate `error`.
+   * Ignores results after a newer request, discard, or accepted week selection; current failures populate `error`.
    */
   function generate() {
-    const requestEpoch = epoch.current;
+    const requestEpoch = ++epoch.current;
     return action.run(
       async () => {
         const next = await apiParsed('/planner/generate', parseSnapshots, {
@@ -76,11 +76,11 @@ export function usePlanner() {
 
   /**
    * Requests an alternative for `meal`, replacing the zero-based selection row `index`.
-   * Sends selected and excluded IDs; ignores results after discard or week selection.
+   * Sends selected and excluded IDs; ignores results after a newer request, discard, or week selection.
    * Failures are caught and exposed through `error`.
    */
   function reroll(index: number, meal: Snapshot) {
-    const requestEpoch = epoch.current;
+    const requestEpoch = ++epoch.current;
     return action.run(
       async () => {
         const next = await apiParsed('/planner/reroll', parseSnapshot, {
@@ -102,12 +102,12 @@ export function usePlanner() {
 
   /**
    * Fetches a snapshot for meal `id` and replaces the zero-based selection row `index`.
-   * An empty ID does nothing; results after discard or week selection are ignored.
+   * An empty ID does nothing; results after a newer request, discard, or week selection are ignored.
    * Failures are caught and exposed through `error`.
    */
   function replace(index: number, id: string) {
     if (!id) return;
-    const requestEpoch = epoch.current;
+    const requestEpoch = ++epoch.current;
     return action.run(
       async () => {
         const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);

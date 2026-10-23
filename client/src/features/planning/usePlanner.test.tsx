@@ -23,6 +23,77 @@ function setup() {
 
 describe('planner selection lifecycle', () => {
   describe.each(['generate', 'reroll', 'replace'] as const)(
+    'pending %s superseded by',
+    (olderOperation) => {
+      describe.each(['generate', 'reroll', 'replace'] as const)(
+        '%s',
+        (newerOperation) => {
+          it.each(['older first', 'newer first', 'older fails'] as const)(
+            'keeps the newer selection when %s',
+            async (completion) => {
+              const fetch = network(() => Response.json([snapshot]));
+              const { result } = setup();
+              await act(async () => {
+                await result.current.generate();
+              });
+
+              function start(operation: typeof olderOperation) {
+                let respond!: (response: Response) => void;
+                fetch.mockImplementationOnce(
+                  () =>
+                    new Promise<Response>((resolve) => {
+                      respond = resolve;
+                    }),
+                );
+                let request: Promise<void> | undefined;
+                act(() => {
+                  request =
+                    operation === 'generate'
+                      ? result.current.generate()
+                      : operation === 'reroll'
+                        ? result.current.reroll(0, snapshot)
+                        : result.current.replace(0, '3');
+                });
+                return async (name: string, fails = false) => {
+                  const next = { ...snapshot, mealId: 3, name };
+                  await act(async () => {
+                    respond(
+                      fails
+                        ? Response.json(
+                            { detail: 'Stale failure.' },
+                            { status: 500 },
+                          )
+                        : Response.json(
+                            operation === 'generate' ? [next] : next,
+                          ),
+                    );
+                    await request;
+                  });
+                };
+              }
+
+              const finishOlder = start(olderOperation);
+              const finishNewer = start(newerOperation);
+              if (completion === 'older first') {
+                await finishOlder('Older dinner');
+                expect(result.current.draft).toEqual([snapshot]);
+                await finishNewer('Newer dinner');
+              } else {
+                await finishNewer('Newer dinner');
+                await finishOlder('Older dinner', completion === 'older fails');
+              }
+              expect(result.current.draft).toEqual([
+                { ...snapshot, mealId: 3, name: 'Newer dinner' },
+              ]);
+              expect(result.current.error).toBeFalsy();
+            },
+          );
+        },
+      );
+    },
+  );
+
+  describe.each(['generate', 'reroll', 'replace'] as const)(
     '%s responses',
     (operation) => {
       it.each(['discard', 'week change', 'week round trip'] as const)(
