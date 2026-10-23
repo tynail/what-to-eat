@@ -5,6 +5,9 @@ import { monday } from './dates';
 import { usePlanner } from './usePlanner';
 
 function setup() {
+  const nextWeekDate = new Date();
+  nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+  const nextWeek = monday(nextWeekDate);
   const harness = queryHarness();
   harness.client.setQueryData(['meals'], [meal]);
   harness.client.setQueryData(
@@ -12,6 +15,7 @@ function setup() {
     [{ id: 2, week: monday(), version: 'plan-v1', meals: [snapshot] }],
   );
   return {
+    nextWeek,
     ...harness,
     ...renderHook(usePlanner, { wrapper: harness.wrapper }),
   };
@@ -29,7 +33,7 @@ describe('planner selection lifecycle', () => {
             'confirm',
             vi.fn(() => true),
           );
-          const { result } = setup();
+          const { result, nextWeek } = setup();
           await act(async () => {
             await result.current.generate();
           });
@@ -53,7 +57,7 @@ describe('planner selection lifecycle', () => {
           const originalWeek = result.current.week;
           act(() => {
             if (transition === 'discard') result.current.discard();
-            else result.current.selectWeek('2026-11-02');
+            else result.current.selectWeek(nextWeek);
           });
           if (transition === 'week round trip') {
             act(() => result.current.selectWeek(originalWeek));
@@ -216,16 +220,16 @@ describe('planner selection lifecycle', () => {
     network(() => Response.json([snapshot]));
     const confirm = vi.fn(() => false);
     vi.stubGlobal('confirm', confirm);
-    const { result } = setup();
+    const { result, nextWeek } = setup();
     await act(async () => {
       await result.current.generate();
     });
-    act(() => result.current.selectWeek('2026-11-02'));
+    act(() => result.current.selectWeek(nextWeek));
     expect(result.current.week).toBe(monday());
     expect(result.current.draft).toEqual([snapshot]);
     confirm.mockReturnValue(true);
-    act(() => result.current.selectWeek('2026-11-02'));
-    expect(result.current.week).toBe('2026-11-02');
+    act(() => result.current.selectWeek(nextWeek));
+    expect(result.current.week).toBe(nextWeek);
     expect(result.current.draft).toBeNull();
   });
 });
