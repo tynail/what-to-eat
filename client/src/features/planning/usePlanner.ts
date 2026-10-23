@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   api,
@@ -28,6 +28,7 @@ export function usePlanner() {
   const [count, setCount] = useState(5);
   const [excluded, setExcluded] = useState<number[]>([]);
   const [draftState, setDraftState] = useState<PlanDraft>({ kind: 'saved' });
+  const epoch = useRef(0);
   const action = useAction();
   const saved = plans.data?.find((plan) => plan.week === week);
   const draft = draftState.kind === 'draft' ? draftState.meals : null;
@@ -38,6 +39,7 @@ export function usePlanner() {
   }
 
   function discard() {
+    epoch.current += 1;
     setDraftState({ kind: 'saved' });
   }
 
@@ -49,18 +51,19 @@ export function usePlanner() {
   }
 
   function generate() {
-    return action.run(async () =>
-      change(
-        await apiParsed('/planner/generate', parseSnapshots, {
-          method: 'POST',
-          body: { count, excludedIds: excluded },
-        }),
-      ),
-    );
+    return action.run(async () => {
+      const requestEpoch = epoch.current;
+      const next = await apiParsed('/planner/generate', parseSnapshots, {
+        method: 'POST',
+        body: { count, excludedIds: excluded },
+      });
+      if (requestEpoch === epoch.current) change(next);
+    });
   }
 
   function reroll(index: number, meal: Snapshot) {
     return action.run(async () => {
+      const requestEpoch = epoch.current;
       const next = await apiParsed('/planner/reroll', parseSnapshot, {
         method: 'POST',
         body: {
@@ -69,6 +72,7 @@ export function usePlanner() {
           replaceId: meal.mealId,
         },
       });
+      if (requestEpoch !== epoch.current) return;
       change(
         selection.map((item, position) => (position === index ? next : item)),
       );
@@ -78,7 +82,9 @@ export function usePlanner() {
   function replace(index: number, id: string) {
     if (!id) return;
     return action.run(async () => {
+      const requestEpoch = epoch.current;
       const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);
+      if (requestEpoch !== epoch.current) return;
       change(
         selection.map((item, position) => (position === index ? next : item)),
       );

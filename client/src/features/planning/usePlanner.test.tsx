@@ -18,6 +18,68 @@ function setup() {
 }
 
 describe('planner selection lifecycle', () => {
+  describe.each(['generate', 'reroll', 'replace'] as const)(
+    '%s responses',
+    (operation) => {
+      it.each(['discard', 'week change', 'week round trip'] as const)(
+        'ignores a pending response after %s',
+        async (transition) => {
+          const fetch = network(() => Response.json([snapshot]));
+          vi.stubGlobal(
+            'confirm',
+            vi.fn(() => true),
+          );
+          const { result } = setup();
+          await act(async () => {
+            await result.current.generate();
+          });
+
+          let respond!: (response: Response) => void;
+          const response = new Promise<Response>((resolve) => {
+            respond = resolve;
+          });
+          fetch.mockImplementationOnce(() => response);
+          let request: Promise<void> | undefined;
+          act(() => {
+            request =
+              operation === 'generate'
+                ? result.current.generate()
+                : operation === 'reroll'
+                  ? result.current.reroll(0, snapshot)
+                  : result.current.replace(0, '3');
+          });
+          expect(fetch).toHaveBeenCalledTimes(3);
+
+          const originalWeek = result.current.week;
+          act(() => {
+            if (transition === 'discard') result.current.discard();
+            else result.current.selectWeek('2026-11-02');
+          });
+          if (transition === 'week round trip') {
+            act(() => result.current.selectWeek(originalWeek));
+          }
+          expect(result.current.draft).toBeNull();
+
+          const replacement = { ...snapshot, mealId: 3, name: 'Late dinner' };
+          await act(async () => {
+            respond(
+              Response.json(
+                operation === 'generate' ? [replacement] : replacement,
+              ),
+            );
+            await request;
+          });
+          expect(result.current.draft).toBeNull();
+          expect(result.current.selection).toEqual(
+            transition === 'week change' ? [] : [snapshot],
+          );
+          expect(result.current.busy).toBe(false);
+          expect(result.current.error).toBeFalsy();
+        },
+      );
+    },
+  );
+
   it('generates with count and exclusions without changing the saved plan', async () => {
     const fetch = network(() =>
       Response.json([{ ...snapshot, mealId: 3, name: 'New dinner' }]),
