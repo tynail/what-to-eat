@@ -48,15 +48,17 @@ export function CatalogEditor({
       close={close}
     >
       <form
+        className="[&_h3]:mt-[26px]"
         onSubmit={(event) => {
           event.preventDefault();
           void action.run(() => save(value));
         }}
       >
-        <fieldset disabled={action.busy}>
-          <label>
+        <fieldset className="border-0 m-0 p-0 min-w-0" disabled={action.busy}>
+          <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
             Name
             <input
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               required
               maxLength={120}
               value={value.value.name}
@@ -70,9 +72,10 @@ export function CatalogEditor({
               }}
             />
           </label>
-          <label>
+          <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
             Description
             <textarea
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0 min-h-[75px] resize-y"
               maxLength={4000}
               value={value.value.description}
               onChange={(event) => {
@@ -95,12 +98,16 @@ export function CatalogEditor({
             />
           )}
           <ErrorBox error={action.error} />
-          <div className="form-actions">
-            <button type="button" onClick={close}>
+          <div className="form-actions [&&]:flex [&&]:justify-end [&&]:gap-[10px] [&&]:[border-top:1px_solid_#e3e8da] [&&]:mt-[26px] [&&]:pt-[18px]">
+            <button
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
+              type="button"
+              onClick={close}
+            >
               Cancel
             </button>
             <button
-              className="primary"
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
               disabled={
                 value.kind === 'meal' && value.value.recipes.length === 0
               }
