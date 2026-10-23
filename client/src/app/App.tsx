@@ -1,18 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  BrowserRouter,
-  NavLink,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
-import {
-  Leaf,
-  CalendarDays,
-  BookOpen,
-  Utensils,
-  Settings as SettingsIcon,
-} from 'lucide-react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Sidebar } from './Sidebar';
 import { apiParsed, parseMe } from '../api';
 import { Settings } from '../features/settings/Settings';
 import { Login } from '../features/access/Login';
@@ -34,53 +22,7 @@ export function App() {
   if (!me.data) return <Login />;
   return (
     <div className="shell">
-      <aside>
-        <a className="brand" href="/">
-          <span className="brand-icon">
-            <Leaf />
-          </span>
-          <span>
-            Weekly Table<small>A little less “what’s for dinner?”</small>
-          </span>
-        </a>
-        <p className="nav-label">YOUR KITCHEN</p>
-        <nav aria-label="Main navigation">
-          <NavLink to="/" end>
-            <CalendarDays />
-            This Week
-          </NavLink>
-          <NavLink to="/meals">
-            <Utensils />
-            Meals
-          </NavLink>
-          <NavLink to="/recipes">
-            <BookOpen />
-            Recipes
-          </NavLink>
-          <NavLink to="/settings">
-            <SettingsIcon />
-            Settings
-          </NavLink>
-        </nav>
-        <div className="sidebar-note">
-          <Leaf />
-          <p>
-            Good food.
-            <br />
-            One less decision.
-          </p>
-          <small>Make room for the meals you love.</small>
-        </div>
-        <div className="account">
-          <span className="avatar">
-            {me.data.username.slice(0, 1).toUpperCase()}
-          </span>
-          <div>
-            {me.data.username}
-            <small>Our household</small>
-          </div>
-        </div>
-      </aside>
+      <Sidebar me={me.data} />
       <main>
         <Routes>
           <Route path="/" element={<Planner />} />
