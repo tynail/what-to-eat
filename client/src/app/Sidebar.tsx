@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { Me } from '../api';
 
+/** Renders household navigation with the current user's name and initial. */
 export function Sidebar({ me }: { me: Me }) {
   return (
     <aside className="sticky [top:0] h-screen bg-[#f0f3e9] [border-right:1px_solid_#e0e5d9] p-[35px_24px] flex flex-col [@media(max-width:1100px)]:p-[28px_16px] [@media(max-width:760px)]:static [@media(max-width:760px)]:h-[auto] [@media(max-width:760px)]:p-[17px_20px] [@media(max-width:760px)]:[border-bottom:1px_solid_#dfe5d6]">

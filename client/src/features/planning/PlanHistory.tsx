@@ -2,6 +2,7 @@ import { ArrowRight, CalendarDays } from 'lucide-react';
 import type { Plan } from '../../api';
 import { pretty } from './dates';
 
+/** Renders saved plans in the supplied order; selecting one reports its week to `onSelect`. */
 export function PlanHistory({
   plans,
   onSelect,

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Utensils } from 'lucide-react';
 
+/** Renders nothing for falsy errors; otherwise shows an alert with the Error message or string value. */
 export function ErrorBox({ error }: { error: unknown }) {
   return error ? (
     <p
@@ -12,6 +13,7 @@ export function ErrorBox({ error }: { error: unknown }) {
   ) : null;
 }
 
+/** Renders a page heading and description, with optional children for actions alongside them. */
 export function Header({
   eyebrow,
   title,
@@ -39,6 +41,7 @@ export function Header({
   );
 }
 
+/** Renders an empty-state title and guidance with a utensils icon. */
 export function Empty({ title, text }: { title: string; text: string }) {
   return (
     <div className="empty [&&]:p-[45px_20px] [&&]:text-center [&&]:[border:1px_dashed_#d9e0cf] [&&]:rounded-[12px] [&&]:text-[#859079] [&&_svg]:text-[#a2b18f] [&&_svg]:mb-[12px] [&&_h3]:[font:21px_Georgia,_serif] [&&_h3]:text-[#596b4b] [&&_p]:text-[12px] [&&_p]:max-w-[460px] [&&_p]:m-[auto]">

@@ -15,6 +15,10 @@ const stylesheet = path.join(client, 'src/style.css');
 const sourceRef = process.argv
   .find((arg) => arg.startsWith('--source-ref='))
   ?.slice('--source-ref='.length);
+/**
+ * Reads UTF-8 source from `--source-ref` when supplied, or from the working tree.
+ * File-read and Git command failures propagate to the caller.
+ */
 const readSource = (file) =>
   sourceRef
     ? execFileSync(
@@ -103,6 +107,7 @@ const properties = {
   'grid-template-columns': 'grid-cols',
   opacity: 'opacity',
 };
+/** Converts a CSS declaration to a Tailwind utility, using arbitrary values when needed. */
 function utility(property, value) {
   value = value.replace(/\s+/g, ' ').trim();
   if (direct[`${property}:${value}`]) return direct[`${property}:${value}`];
@@ -113,6 +118,7 @@ function utility(property, value) {
   if (properties[property]) return `${properties[property]}-[${escaped}]`;
   return `[${property}:${escaped}]`;
 }
+/** Appends values to the map entry, creating it when absent and retaining duplicates. */
 function add(map, key, values) {
   map.set(key, [...(map.get(key) ?? []), ...values]);
 }
@@ -171,6 +177,10 @@ for (const [name, values] of elements) {
   );
 }
 
+/**
+ * Recursively lists TSX files, excluding paths containing `.test.` or a `test` directory.
+ * Directory-read errors propagate to the caller.
+ */
 function files(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(directory, entry.name);
@@ -193,6 +203,10 @@ for (const file of files(path.join(client, 'src'))) {
     ts.ScriptKind.TSX,
   );
   const edits = [];
+  /**
+   * Collects utility-class edits from this node and its descendants in `edits`.
+   * Throws when element utilities must be added to a nonliteral className.
+   */
   function visit(node) {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const base = elements.get(node.tagName.getText(tree)) ?? [];

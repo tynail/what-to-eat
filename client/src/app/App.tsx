@@ -7,6 +7,10 @@ import { Login } from '../features/access/Login';
 import { Catalog } from '../features/catalog/Catalog';
 import { Planner } from '../features/planning/Planner';
 
+/**
+ * Shows account redemption at `/join`; elsewhere waits for the current-user query
+ * and renders sign-in when no user is available, or the household routes otherwise.
+ */
 export function App() {
   const me = useQuery({
     queryKey: ['me'],

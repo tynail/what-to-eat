@@ -1,5 +1,9 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 
+/**
+ * Opens a modal dialog on mount. Escape and the close button invoke `close`;
+ * native cancellation is prevented, leaving dismissal to the caller.
+ */
 export function Modal({
   title,
   close,

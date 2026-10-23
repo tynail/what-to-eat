@@ -1,6 +1,10 @@
 import type { Snapshot } from '../api/types';
 import { Modal } from '../ui/Modal';
 
+/**
+ * Displays snapshot recipes in a dialog, rounding quantities to at most three
+ * decimal places and omitting null quantities and unspecified unit labels.
+ */
 export function CookingDetail({
   meal,
   close,

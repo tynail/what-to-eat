@@ -1,6 +1,7 @@
 import { Leaf } from 'lucide-react';
 import './PlannerHero.css';
 
+/** Renders the planner introduction with decorative plate artwork hidden from assistive technology. */
 export function PlannerHero() {
   return (
     <section className="planner-hero [&&]:bg-[#e9eedf] [&&]:[border:1px_solid_#dfe6d4] [&&]:rounded-[14px] [&&]:flex [&&]:justify-between [&&]:min-h-[278px] [&&]:p-[31px_36px] [&&]:overflow-hidden [&&]:mb-[26px] [&&_h2]:[font:36px/1.15_Georgia,_serif] [&&_h2]:tracking-[-0.7px] [&&_h2]:m-[17px_0_12px] [&&_p]:text-[#7e8774] [&&_p]:text-[12px] [@media(max-width:760px)]:[&&]:p-[25px] [@media(max-width:760px)]:[&&]:min-h-[248px] [@media(max-width:760px)]:[&&_h2]:text-[31px]">

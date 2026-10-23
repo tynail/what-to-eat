@@ -2,6 +2,11 @@ import { Shuffle } from 'lucide-react';
 import type { Meal } from '../../api';
 import { ErrorBox } from '../../shared/ui/page';
 
+/**
+ * Renders generation controls, reporting a date-only week, meal count, and excluded
+ * meal IDs through callbacks. `busy` changes the button label; `disabled` controls
+ * whether generation can be requested.
+ */
 export function PlanGenerator({
   week,
   count,

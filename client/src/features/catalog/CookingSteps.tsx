@@ -1,6 +1,10 @@
 import { Plus } from 'lucide-react';
 import type { RecipeInput } from '../../api';
 
+/**
+ * Edits, adds, removes, and moves cooking steps up, reporting replacement recipes
+ * through `update`. The first step cannot move up; the only remaining step cannot be removed.
+ */
 export function CookingSteps({
   recipe,
   update,

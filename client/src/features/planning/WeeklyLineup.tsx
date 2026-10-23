@@ -1,6 +1,11 @@
 import { Shuffle } from 'lucide-react';
 import type { Meal, Snapshot } from '../../api';
 
+/**
+ * Renders selected meal snapshots with cooking, reroll, and replacement actions.
+ * Edit callbacks receive a zero-based selection index; replacement IDs are strings.
+ * Replacement choices omit selected and excluded meals. `busy` disables edits.
+ */
 export function WeeklyLineup({
   selection,
   meals,

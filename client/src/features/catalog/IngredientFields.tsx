@@ -2,6 +2,11 @@ import { Plus } from 'lucide-react';
 import type { Ingredient, RecipeInput } from '../../api';
 import { blankIngredient, units } from './factories';
 
+/**
+ * Edits ingredient rows and reports replacement recipes through `update`.
+ * Blank quantities become null and are optional for unspecified units.
+ * The removal button is disabled for the only remaining ingredient.
+ */
 export function IngredientFields({
   recipe,
   update,

@@ -2,6 +2,11 @@ import { Plus } from 'lucide-react';
 import type { HouseholdUser } from '../../api';
 import { ErrorBox } from '../../shared/ui/page';
 
+/**
+ * Renders member access actions and the issued private link, delegating changes to
+ * callbacks. Hides the current user's enable/disable action and disables password
+ * resets for disabled users; `busy` disables all action buttons.
+ */
 export function HouseholdAccess({
   currentUserId,
   users,

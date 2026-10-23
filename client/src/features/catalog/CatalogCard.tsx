@@ -2,6 +2,7 @@ import { BookOpen, Utensils } from 'lucide-react';
 import type { Meal, Recipe } from '../../api';
 import { isRecipe } from './editorState';
 
+/** Renders a recipe or meal summary, passing the item to view, edit, and delete callbacks. */
 export function CatalogCard({
   item,
   onView,
