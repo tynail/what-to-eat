@@ -5,6 +5,10 @@ export class ApiError extends Error {
 let csrf = "";
 let csrfRequest: Promise<string> | undefined;
 
+type ApiRequestOptions =
+  | { method?: "GET" | "HEAD"; body?: never }
+  | { method: "POST" | "PUT" | "DELETE"; body?: unknown };
+
 async function readProblem(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => undefined);
   if (typeof body === "object" && body !== null && "detail" in body && typeof body.detail === "string") return body.detail;
@@ -26,17 +30,16 @@ async function requestCsrf(): Promise<string> {
   return csrfRequest;
 }
 
-export async function api(path: string, method = "GET", body?: unknown): Promise<unknown> {
-  return request(path, method, body);
+export async function api(path: string, options: ApiRequestOptions = {}): Promise<unknown> {
+  return request(path, options);
 }
 
 export async function apiParsed<T>(
   path: string,
   parse: (value: unknown) => T,
-  method = "GET",
-  body?: unknown,
+  options: ApiRequestOptions = {},
 ): Promise<T> {
-  const value = await request(path, method, body);
+  const value = await request(path, options);
   try {
     return parse(value);
   } catch {
@@ -44,7 +47,9 @@ export async function apiParsed<T>(
   }
 }
 
-async function request(path: string, method: string, body?: unknown): Promise<unknown> {
+async function request(path: string, options: ApiRequestOptions): Promise<unknown> {
+  const method = options.method ?? "GET";
+  const body = "body" in options ? options.body : undefined;
   const mutation = method !== "GET" && method !== "HEAD";
   const token = mutation ? (csrf || await requestCsrf()) : undefined;
   const response = await fetch(`/api${path}`, { method, credentials: "same-origin", headers: { "Content-Type": "application/json", ...(token ? { "X-CSRF-TOKEN": token } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });

@@ -117,9 +117,9 @@ export function Planner() {
             onClick={() =>
               void action.run(async () =>
                 change(
-                  await apiParsed("/planner/generate", parseSnapshots, "POST", {
-                    count,
-                    excludedIds: excluded,
+                  await apiParsed("/planner/generate", parseSnapshots, {
+                    method: "POST",
+                    body: { count, excludedIds: excluded },
                   }),
                 ),
               )
@@ -201,11 +201,13 @@ export function Planner() {
                     const next = await apiParsed(
                       "/planner/reroll",
                       parseSnapshot,
-                      "POST",
                       {
+                        method: "POST",
+                        body: {
                         selectedIds: selection.map((s) => s.mealId),
                         excludedIds: excluded,
                         replaceId: m.mealId,
+                        },
                       },
                     );
                     change(selection.map((s, n) => (n === i ? next : s)));
@@ -253,9 +255,12 @@ export function Planner() {
             onClick={() => {
               if (!saved || confirm("Replace this week’s saved plan?"))
                 void action.run(async () => {
-                  await api(`/plans/${week}`, "PUT", {
-                    meals: draft,
-                    version: baseVersion,
+                  await api(`/plans/${week}`, {
+                    method: "PUT",
+                    body: {
+                      meals: draft,
+                      version: baseVersion,
+                    },
                   });
                   await qc.invalidateQueries({ queryKey: ["plans"] });
                   setDraftState({ kind: "saved" });
@@ -274,10 +279,7 @@ export function Planner() {
           onClick={() => {
             if (confirm("Delete this saved week?"))
               void action.run(async () => {
-                await api(
-                  `/plans/${saved.id}?version=${saved.version}`,
-                  "DELETE",
-                );
+                await api(`/plans/${saved.id}?version=${saved.version}`, { method: "DELETE" });
                 setDraftState({ kind: "saved" });
                 await qc.invalidateQueries({ queryKey: ["plans"] });
               });
