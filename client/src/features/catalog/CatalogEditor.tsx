@@ -16,6 +16,11 @@ function isRecipe(value: Recipe | Meal): value is Recipe {
   return "ingredients" in value;
 }
 
+/**
+ * Builds saved editor state with identity and version separate from the input payload,
+ * omitting recipe names from meal references. Recipe ingredient and step arrays are
+ * shared with the input record; callers needing an independent copy must clone it first.
+ */
 export function editRecord(item: Recipe | Meal): EditorState {
   if (isRecipe(item)) {
     const { id, version, ...value } = item;
@@ -35,6 +40,15 @@ export function editRecord(item: Recipe | Meal): EditorState {
   };
 }
 
+/**
+ * Edits a recipe or meal in a modal, displaying save failures and disabling fields
+ * while saving. A meal with no selected recipes has its save button disabled.
+ *
+ * `initial` is captured on mount; later prop changes do not reset the draft.
+ * `recipes` supplies the meal choices. `save` receives the current editor state;
+ * rejections are caught and displayed. `close` handles dismissal and is not
+ * automatically called after a successful save.
+ */
 export function CatalogEditor({ initial, recipes, save, close }: {
   initial: EditorState;
   recipes: Recipe[];
@@ -99,7 +113,13 @@ export function CatalogEditor({ initial, recipes, save, close }: {
   );
 }
 
+/**
+ * Renders recipe inputs and reports replacement recipe values through `update`.
+ * An unspecified unit permits a blank quantity, stored as null. Removal buttons
+ * preserve the last ingredient and step; cooking steps can be moved up one position.
+ */
 function RecipeFields({ recipe, update }: { recipe: RecipeInput; update: (recipe: RecipeInput) => void }) {
+  /** Patches the ingredient at a zero-based index; an unmatched index leaves all rows unchanged. */
   function updateIngredient(index: number, patch: Partial<Ingredient>) {
     update({
       ...recipe,
@@ -186,6 +206,11 @@ function RecipeFields({ recipe, update }: { recipe: RecipeInput; update: (recipe
   );
 }
 
+/**
+ * Renders recipe selection and target servings, reporting replacement meal values
+ * through `update`. Newly selected recipes start with their base servings; the
+ * target-servings inputs accept values from 0.01 through 1000, inclusive.
+ */
 function MealFields({ meal, recipes, update }: { meal: MealInput; recipes: Recipe[]; update: (meal: MealInput) => void }) {
   return (
     <>

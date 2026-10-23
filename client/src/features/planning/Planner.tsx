@@ -8,6 +8,11 @@ import { CookingDetail } from "../../shared/cooking/CookingDetail";
 import { monday, pretty } from "./dates";
 import { beginDraft, type PlanDraft } from "./draft";
 
+/**
+ * Displays saved weekly plans and an unsaved selection that can be generated,
+ * rerolled, or manually replaced. Saving persists the selected snapshots and
+ * refreshes plan history; request failures are displayed on the page.
+ */
 export function Planner() {
   const meals = useQuery({
     queryKey: ["meals"],
