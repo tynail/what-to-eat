@@ -1,0 +1,8 @@
+{
+  "name": "what-to-eat",
+  "private": true,
+  "scripts": {
+    "format": "npm run format --prefix client",
+    "format:check": "npm run format:check --prefix client"
+  }
+}
