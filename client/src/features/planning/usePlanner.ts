@@ -61,14 +61,17 @@ export function usePlanner() {
    * Ignores the result after a discard or accepted week selection; failures populate `error`.
    */
   function generate() {
-    return action.run(async () => {
-      const requestEpoch = epoch.current;
-      const next = await apiParsed('/planner/generate', parseSnapshots, {
-        method: 'POST',
-        body: { count, excludedIds: excluded },
-      });
-      if (requestEpoch === epoch.current) change(next);
-    });
+    const requestEpoch = epoch.current;
+    return action.run(
+      async () => {
+        const next = await apiParsed('/planner/generate', parseSnapshots, {
+          method: 'POST',
+          body: { count, excludedIds: excluded },
+        });
+        if (requestEpoch === epoch.current) change(next);
+      },
+      () => requestEpoch === epoch.current,
+    );
   }
 
   /**
@@ -77,21 +80,24 @@ export function usePlanner() {
    * Failures are caught and exposed through `error`.
    */
   function reroll(index: number, meal: Snapshot) {
-    return action.run(async () => {
-      const requestEpoch = epoch.current;
-      const next = await apiParsed('/planner/reroll', parseSnapshot, {
-        method: 'POST',
-        body: {
-          selectedIds: selection.map((item) => item.mealId),
-          excludedIds: excluded,
-          replaceId: meal.mealId,
-        },
-      });
-      if (requestEpoch !== epoch.current) return;
-      change(
-        selection.map((item, position) => (position === index ? next : item)),
-      );
-    });
+    const requestEpoch = epoch.current;
+    return action.run(
+      async () => {
+        const next = await apiParsed('/planner/reroll', parseSnapshot, {
+          method: 'POST',
+          body: {
+            selectedIds: selection.map((item) => item.mealId),
+            excludedIds: excluded,
+            replaceId: meal.mealId,
+          },
+        });
+        if (requestEpoch !== epoch.current) return;
+        change(
+          selection.map((item, position) => (position === index ? next : item)),
+        );
+      },
+      () => requestEpoch === epoch.current,
+    );
   }
 
   /**
@@ -101,14 +107,17 @@ export function usePlanner() {
    */
   function replace(index: number, id: string) {
     if (!id) return;
-    return action.run(async () => {
-      const requestEpoch = epoch.current;
-      const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);
-      if (requestEpoch !== epoch.current) return;
-      change(
-        selection.map((item, position) => (position === index ? next : item)),
-      );
-    });
+    const requestEpoch = epoch.current;
+    return action.run(
+      async () => {
+        const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);
+        if (requestEpoch !== epoch.current) return;
+        change(
+          selection.map((item, position) => (position === index ? next : item)),
+        );
+      },
+      () => requestEpoch === epoch.current,
+    );
   }
 
   /**

@@ -84,6 +84,59 @@ describe('planner selection lifecycle', () => {
     },
   );
 
+  describe.each(['generate', 'reroll', 'replace'] as const)(
+    '%s failures',
+    (operation) => {
+      function runOperation(
+        result: ReturnType<typeof setup>['result'],
+      ): Promise<void> | undefined {
+        return operation === 'generate'
+          ? result.current.generate()
+          : operation === 'reroll'
+            ? result.current.reroll(0, snapshot)
+            : result.current.replace(0, '3');
+      }
+
+      it('ignores a rejected pending request after discard', async () => {
+        network(() => Response.json([snapshot]));
+        const { result } = setup();
+        await act(async () => {
+          await result.current.generate();
+        });
+
+        let respond!: (response: Response) => void;
+        const response = new Promise<Response>((resolve) => {
+          respond = resolve;
+        });
+        const fetch = vi.mocked(globalThis.fetch);
+        fetch.mockImplementationOnce(() => response);
+        let request: Promise<void> | undefined;
+        act(() => {
+          request = runOperation(result);
+          result.current.discard();
+        });
+        await act(async () => {
+          respond(
+            Response.json({ detail: 'Request failed.' }, { status: 500 }),
+          );
+          await request;
+        });
+        expect(result.current.error).toBeFalsy();
+      });
+
+      it('reports a rejected request in its current context', async () => {
+        network(() =>
+          Response.json({ detail: 'Request failed.' }, { status: 500 }),
+        );
+        const { result } = setup();
+        await act(async () => {
+          await runOperation(result);
+        });
+        expect(result.current.error).toBe('Request failed.');
+      });
+    },
+  );
+
   it('generates with count and exclusions without changing the saved plan', async () => {
     const fetch = network(() =>
       Response.json([{ ...snapshot, mealId: 3, name: 'New dinner' }]),

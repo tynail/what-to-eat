@@ -2,8 +2,8 @@ import { useState } from 'react';
 
 /**
  * Returns busy/error state and a runner that clears prior errors before each action.
- * The runner catches failures, storing an Error message or a generic fallback, and
- * resets busy state when the action settles; caught failures do not reject its promise.
+ * The runner catches failures, optionally storing an Error message or a generic fallback,
+ * and resets busy state when the action settles; caught failures do not reject its promise.
  */
 export function useAction() {
   const [error, setError] = useState('');
@@ -11,15 +11,19 @@ export function useAction() {
   return {
     error,
     busy,
-    run: async (fn: () => Promise<void>) => {
+    run: async (
+      fn: () => Promise<void>,
+      shouldReportError: () => boolean = () => true,
+    ) => {
       setBusy(true);
       setError('');
       try {
         await fn();
       } catch (cause) {
-        setError(
-          cause instanceof Error ? cause.message : 'Something went wrong.',
-        );
+        if (shouldReportError())
+          setError(
+            cause instanceof Error ? cause.message : 'Something went wrong.',
+          );
       } finally {
         setBusy(false);
       }
