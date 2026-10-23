@@ -93,6 +93,19 @@ Restore into a **new empty volume**, leaving the original volume intact for reco
 
 For local backup verification, set `DATA_DIRECTORY` and `BACKUP_DIRECTORY`, then run `python scripts/backup.py`. Restore the resulting directory under a separate `DataDirectory` and start the app against it.
 
+## Formatting
+
+Install the pinned client tools with `npm ci --prefix client`. From the repository root, run:
+
+```powershell
+npm run format
+npm run format:check
+```
+
+Both commands cover the entire repository, including the React client, browser tests, HTML, CSS, JSON configuration, Markdown documentation, and YAML workflows. Run them from the client directory with `npm run format` or `npm run format:check` as well. Prettier configuration lives in `.prettierrc.json`; `.prettierignore` excludes generated lockfiles, installed dependencies, build outputs, local data, and browser artifacts. CI and `scripts/verify.ps1` run the check without rewriting files.
+
+Prettier does not support the repository's C#, Python, PowerShell, XML project/NuGet files, Dockerfile, or Caddyfile without additional language-specific tools. These files are skipped by `--ignore-unknown`. No third-party formatting plugins are installed, and the check does not claim to validate those languages.
+
 ## Tests
 
 ```powershell

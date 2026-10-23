@@ -1,12 +1,20 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, CalendarDays, Leaf, Shuffle } from "lucide-react";
-import { api, apiParsed, parseMeals, parsePlans, parseSnapshot, parseSnapshots, type Snapshot } from "../../api";
-import { useAction } from "../../shared/ui/action";
-import { Empty, ErrorBox, Header } from "../../shared/ui/page";
-import { CookingDetail } from "../../shared/cooking/CookingDetail";
-import { monday, pretty } from "./dates";
-import { beginDraft, type PlanDraft } from "./draft";
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowRight, CalendarDays, Leaf, Shuffle } from 'lucide-react';
+import {
+  api,
+  apiParsed,
+  parseMeals,
+  parsePlans,
+  parseSnapshot,
+  parseSnapshots,
+  type Snapshot,
+} from '../../api';
+import { useAction } from '../../shared/ui/action';
+import { Empty, ErrorBox, Header } from '../../shared/ui/page';
+import { CookingDetail } from '../../shared/cooking/CookingDetail';
+import { monday, pretty } from './dates';
+import { beginDraft, type PlanDraft } from './draft';
 
 /**
  * Displays saved weekly plans and an unsaved selection that can be generated,
@@ -15,26 +23,27 @@ import { beginDraft, type PlanDraft } from "./draft";
  */
 export function Planner() {
   const meals = useQuery({
-    queryKey: ["meals"],
-    queryFn: () => apiParsed("/meals", parseMeals),
+    queryKey: ['meals'],
+    queryFn: () => apiParsed('/meals', parseMeals),
   });
   const plans = useQuery({
-    queryKey: ["plans"],
-    queryFn: () => apiParsed("/plans", parsePlans),
+    queryKey: ['plans'],
+    queryFn: () => apiParsed('/plans', parsePlans),
   });
   const qc = useQueryClient();
   const [week, setWeek] = useState(monday());
   const [count, setCount] = useState(5);
   const [excluded, setExcluded] = useState<number[]>([]);
-  const [draftState, setDraftState] = useState<PlanDraft>({ kind: "saved" });
+  const [draftState, setDraftState] = useState<PlanDraft>({ kind: 'saved' });
   const [view, setView] = useState<Snapshot | null>(null);
   const action = useAction();
   const saved = plans.data?.find((p) => p.week === week);
-  const draft = draftState.kind === "draft" ? draftState.meals : null;
-  const baseVersion = draftState.kind === "draft" ? draftState.baseVersion : null;
+  const draft = draftState.kind === 'draft' ? draftState.meals : null;
+  const baseVersion =
+    draftState.kind === 'draft' ? draftState.baseVersion : null;
   const selection = draft ?? saved?.meals ?? [];
   function change(items: Snapshot[]) {
-    setDraftState(current => beginDraft(current, items, saved?.version));
+    setDraftState((current) => beginDraft(current, items, saved?.version));
   }
   return (
     <>
@@ -96,10 +105,10 @@ export function Planner() {
               onChange={(e) => {
                 if (
                   e.target.value &&
-                  (!draft || confirm("Discard unsaved selection?"))
+                  (!draft || confirm('Discard unsaved selection?'))
                 ) {
                   setWeek(monday(new Date(`${e.target.value}T12:00:00`)));
-                  setDraftState({ kind: "saved" });
+                  setDraftState({ kind: 'saved' });
                 }
               }}
             />
@@ -122,8 +131,8 @@ export function Planner() {
             onClick={() =>
               void action.run(async () =>
                 change(
-                  await apiParsed("/planner/generate", parseSnapshots, {
-                    method: "POST",
+                  await apiParsed('/planner/generate', parseSnapshots, {
+                    method: 'POST',
                     body: { count, excludedIds: excluded },
                   }),
                 ),
@@ -131,12 +140,12 @@ export function Planner() {
             }
           >
             <Shuffle size={18} />
-            {action.busy ? "Working…" : "Pick my meals"}
+            {action.busy ? 'Working…' : 'Pick my meals'}
           </button>
         </div>
         <details className="exclusions">
           <summary>
-            Leave something out{" "}
+            Leave something out{' '}
             <span className="muted">({excluded.length} excluded)</span>
           </summary>
           <div className="checks">
@@ -169,10 +178,10 @@ export function Planner() {
         </div>
         <span className="pill">
           {draft
-            ? "Unsaved preview"
+            ? 'Unsaved preview'
             : saved
-              ? "Saved plan"
-              : "Ready when you are"}
+              ? 'Saved plan'
+              : 'Ready when you are'}
         </span>
       </div>
       {!selection.length ? (
@@ -180,8 +189,8 @@ export function Planner() {
           title="A delicious week starts with a little shuffle"
           text={
             meals.data?.length
-              ? "Choose your meal count above, then hit Pick my meals."
-              : "First, add recipes and build a few meals in your collection."
+              ? 'Choose your meal count above, then hit Pick my meals.'
+              : 'First, add recipes and build a few meals in your collection.'
           }
         />
       ) : (
@@ -189,12 +198,12 @@ export function Planner() {
           {selection.map((m, i) => (
             <article className="meal-row" key={`${m.mealId}-${i}`}>
               <span className="meal-number">
-                {String(i + 1).padStart(2, "0")}
+                {String(i + 1).padStart(2, '0')}
               </span>
               <div className="meal-copy">
                 <h3>{m.name}</h3>
                 <p className="muted">
-                  {m.recipes.map((r) => r.name).join(" + ")}
+                  {m.recipes.map((r) => r.name).join(' + ')}
                 </p>
               </div>
               <button onClick={() => setView(m)}>Cook this</button>
@@ -204,14 +213,14 @@ export function Planner() {
                 onClick={() =>
                   void action.run(async () => {
                     const next = await apiParsed(
-                      "/planner/reroll",
+                      '/planner/reroll',
                       parseSnapshot,
                       {
-                        method: "POST",
+                        method: 'POST',
                         body: {
-                        selectedIds: selection.map((s) => s.mealId),
-                        excludedIds: excluded,
-                        replaceId: m.mealId,
+                          selectedIds: selection.map((s) => s.mealId),
+                          excludedIds: excluded,
+                          replaceId: m.mealId,
                         },
                       },
                     );
@@ -229,7 +238,10 @@ export function Planner() {
                   const id = e.target.value;
                   if (id)
                     void action.run(async () => {
-                      const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);
+                      const next = await apiParsed(
+                        `/meals/${id}/snapshot`,
+                        parseSnapshot,
+                      );
                       change(selection.map((s, n) => (n === i ? next : s)));
                     });
                 }}
@@ -258,23 +270,25 @@ export function Planner() {
             className="primary"
             disabled={action.busy}
             onClick={() => {
-              if (!saved || confirm("Replace this week’s saved plan?"))
+              if (!saved || confirm('Replace this week’s saved plan?'))
                 void action.run(async () => {
                   await api(`/plans/${week}`, {
-                    method: "PUT",
+                    method: 'PUT',
                     body: {
                       meals: draft,
                       version: baseVersion,
                     },
                   });
-                  await qc.invalidateQueries({ queryKey: ["plans"] });
-                  setDraftState({ kind: "saved" });
+                  await qc.invalidateQueries({ queryKey: ['plans'] });
+                  setDraftState({ kind: 'saved' });
                 });
             }}
           >
             Save week <ArrowRight size={16} />
           </button>
-          <button onClick={() => setDraftState({ kind: "saved" })}>Discard preview</button>
+          <button onClick={() => setDraftState({ kind: 'saved' })}>
+            Discard preview
+          </button>
         </div>
       )}
       {saved && (
@@ -282,11 +296,13 @@ export function Planner() {
           className="text-button danger"
           disabled={action.busy}
           onClick={() => {
-            if (confirm("Delete this saved week?"))
+            if (confirm('Delete this saved week?'))
               void action.run(async () => {
-                await api(`/plans/${saved.id}?version=${saved.version}`, { method: "DELETE" });
-                setDraftState({ kind: "saved" });
-                await qc.invalidateQueries({ queryKey: ["plans"] });
+                await api(`/plans/${saved.id}?version=${saved.version}`, {
+                  method: 'DELETE',
+                });
+                setDraftState({ kind: 'saved' });
+                await qc.invalidateQueries({ queryKey: ['plans'] });
               });
           }}
         >
@@ -301,9 +317,9 @@ export function Planner() {
               <button
                 key={p.id}
                 onClick={() => {
-                  if (!draft || confirm("Discard unsaved selection?")) {
+                  if (!draft || confirm('Discard unsaved selection?')) {
                     setWeek(p.week);
-                    setDraftState({ kind: "saved" });
+                    setDraftState({ kind: 'saved' });
                   }
                 }}
               >

@@ -21,8 +21,8 @@ services:
     environment:
       DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
@@ -34,12 +34,12 @@ services:
   backup:
     image: python:3.13-alpine
     profiles: [tools]
-    user: "1654:1654"
+    user: '1654:1654'
     volumes:
       - kitchen-data:/data
       - ./backups:/backups
       - ./scripts/backup.py:/backup.py:ro
-    entrypoint: ["python", "/backup.py"]
+    entrypoint: ['python', '/backup.py']
 volumes:
   kitchen-data:
   caddy-data:
