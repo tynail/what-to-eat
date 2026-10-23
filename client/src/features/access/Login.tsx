@@ -13,7 +13,7 @@ type AccessLink =
 /**
  * Parses a location hash such as `#invite:token` or `#reset:token` without decoding it.
  * Expects the leading `#` but does not validate it. Returns `invalid` for an unknown
- * kind, missing separator, empty token, or token containing another colon.
+ * kind, missing separator, or token other than exactly 64 uppercase hexadecimal characters.
  */
 function parseAccessLink(fragment: string): AccessLink {
   const separator = fragment.indexOf(":");
@@ -21,7 +21,7 @@ function parseAccessLink(fragment: string): AccessLink {
 
   const kind = fragment.slice(1, separator);
   const token = fragment.slice(separator + 1);
-  if (!token || token.includes(":")) return { kind: "invalid" };
+  if (!/^[A-F0-9]{64}$/.test(token)) return { kind: "invalid" };
   if (kind === "invite") return { kind, token };
   if (kind === "reset") return { kind, token };
   return { kind: "invalid" };
