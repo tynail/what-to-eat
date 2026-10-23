@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { LogOut, Plus } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, resetCsrf, type HouseholdUser, type Me } from "../../api";
+import { api, apiParsed, parseHouseholdUsers, parseLinkResponse, resetCsrf, type Me } from "../../api";
 import { useAction } from "../../shared/ui/action";
 import { ErrorBox, Header } from "../../shared/ui/page";
 
 export function Settings({ me }: { me: Me }) {
   const queryClient = useQueryClient();
-  const users = useQuery({ queryKey: ["users"], queryFn: () => api<HouseholdUser[]>("/admin/users"), enabled: me.isAdmin });
+  const users = useQuery({ queryKey: ["users"], queryFn: () => apiParsed("/admin/users", parseHouseholdUsers), enabled: me.isAdmin });
   const action = useAction();
   const [link, setLink] = useState("");
   async function issue(path: string) {
-    const result = await api<{ path: string; expiresAt: string }>(path, "POST");
+    const result = await apiParsed(path, parseLinkResponse, "POST");
     setLink(`${location.origin}${result.path}`);
   }
   return <>

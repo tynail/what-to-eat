@@ -101,6 +101,8 @@ dotnet test tests --no-restore
 npm run build --prefix client
 ```
 
+For one repeatable local check, run `pwsh -File scripts/verify.ps1`. Use `-SkipTests` when the local VSTest host cannot start; CI still runs the test command itself.
+
 Backend tests use real isolated SQLite databases and the ASP.NET test server. Coverage includes authentication, role isolation, CSRF, CRUD, reference blocking, stale versions, saved snapshots, single-use/expired links, random selection, and serving scaling.
 
 Browser tests require a running backend serving the built frontend and an **isolated disposable test database**, bootstrapped with a test admin. Set `E2E_USERNAME`, `E2E_PASSWORD`, and optionally `E2E_URL`; defaults are only test fixture credentials and never seed production. Tests create members and data, so never target production.

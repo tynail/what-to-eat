@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace MealPlanner.Tests;
@@ -15,7 +16,12 @@ namespace MealPlanner.Tests;
 public class KitchenFactory : WebApplicationFactory<Program>
 {
     public string DataPath { get; } = Path.Combine(Path.GetTempPath(), "mealplanner-tests-" + Guid.NewGuid());
-    protected override void ConfigureWebHost(IWebHostBuilder builder) { builder.UseEnvironment("Development"); builder.UseSetting("DataDirectory", DataPath); }
+    public TestClock Clock { get; } = new();
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Development"); builder.UseSetting("DataDirectory", DataPath);
+        builder.ConfigureServices(services => { services.RemoveAll<TimeProvider>(); services.AddSingleton<TimeProvider>(Clock); });
+    }
     public async Task<HttpClient> Login(bool admin = true)
     {
         var client = CreateClient(new() { AllowAutoRedirect = false });
@@ -27,6 +33,13 @@ public class KitchenFactory : WebApplicationFactory<Program>
     }
     public static async Task Csrf(HttpClient c) { c.DefaultRequestHeaders.Remove("X-CSRF-TOKEN"); var token = await c.GetFromJsonAsync<JsonElement>("/api/auth/csrf"); c.DefaultRequestHeaders.Add("X-CSRF-TOKEN", token.GetProperty("token").GetString()); }
     protected override void Dispose(bool disposing) { base.Dispose(disposing); Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools(); if (Directory.Exists(DataPath)) Directory.Delete(DataPath, true); }
+}
+
+public sealed class TestClock : TimeProvider
+{
+    public DateTimeOffset Current { get; private set; } = new(2026, 9, 1, 12, 0, 0, TimeSpan.Zero);
+    public override DateTimeOffset GetUtcNow() => Current;
+    public void Advance(TimeSpan duration) => Current += duration;
 }
 public class ApiTests
 {
@@ -69,8 +82,50 @@ public class ApiTests
         using var scope = f.Services.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<AppDb>(); var user = await db.Users.SingleAsync(u => u.UserName == "newmember");
         var reset = await Issue($"/api/admin/users/{user.Id}/reset"); var resetInput = new RedeemInput(reset, "", "Changed!Password42");
         (await guest.PostAsJsonAsync("/api/auth/redeem", resetInput)).EnsureSuccessStatusCode(); Assert.Equal(HttpStatusCode.BadRequest, (await guest.PostAsJsonAsync("/api/auth/redeem", resetInput)).StatusCode);
-        var expired = await Issue("/api/admin/invites"); await db.AccessTokens.Where(t => t.UsedAt == null).ExecuteUpdateAsync(s => s.SetProperty(t => t.ExpiresAt, DateTime.UtcNow.AddMinutes(-1)));
+        var expired = await Issue("/api/admin/invites"); f.Clock.Advance(TimeSpan.FromHours(49));
         Assert.Equal(HttpStatusCode.BadRequest, (await guest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(expired, "expired", "Testing!Password42"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task ConcurrentRedemptionAllowsOnlyOneUseOfAnInvite()
+    {
+        using var factory = new KitchenFactory();
+        using var admin = await factory.Login();
+        using var firstGuest = factory.CreateClient();
+        using var secondGuest = factory.CreateClient();
+        await KitchenFactory.Csrf(firstGuest);
+        await KitchenFactory.Csrf(secondGuest);
+
+        var issued = await admin.PostAsync("/api/admin/invites", null);
+        issued.EnsureSuccessStatusCode();
+        var token = (await issued.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("path").GetString()!.Split(':')[1];
+        var first = firstGuest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(token, "first" + Guid.NewGuid().ToString("N"), "Testing!Password42"));
+        var second = secondGuest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(token, "second" + Guid.NewGuid().ToString("N"), "Testing!Password42"));
+
+        var statuses = (await Task.WhenAll(first, second)).Select(response => response.StatusCode).Order().ToArray();
+        Assert.Equal([HttpStatusCode.OK, HttpStatusCode.BadRequest], statuses);
+    }
+
+    [Fact]
+    public async Task NewPasswordResetLinkRevokesEarlierUnusedLink()
+    {
+        using var factory = new KitchenFactory(); using var admin = await factory.Login(); using var guest = factory.CreateClient(); await KitchenFactory.Csrf(guest);
+        using var scope = factory.Services.CreateScope(); var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var user = new User { UserName = "member" + Guid.NewGuid().ToString("N") };
+        Assert.True((await users.CreateAsync(user, "Testing!Password42")).Succeeded);
+        Assert.True((await users.AddToRoleAsync(user, "Member")).Succeeded);
+
+        async Task<string> IssueReset()
+        {
+            var response = await admin.PostAsync($"/api/admin/users/{user.Id}/reset", null);
+            response.EnsureSuccessStatusCode();
+            return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("path").GetString()!.Split(':')[1];
+        }
+
+        var earlier = await IssueReset();
+        var current = await IssueReset();
+        Assert.Equal(HttpStatusCode.BadRequest, (await guest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(earlier, "", "Changed!Password42"))).StatusCode);
+        (await guest.PostAsJsonAsync("/api/auth/redeem", new RedeemInput(current, "", "Changed!Password42"))).EnsureSuccessStatusCode();
     }
 
     [Fact]

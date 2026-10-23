@@ -26,7 +26,25 @@ async function requestCsrf(): Promise<string> {
   return csrfRequest;
 }
 
-export async function api<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+export async function api(path: string, method = "GET", body?: unknown): Promise<unknown> {
+  return request(path, method, body);
+}
+
+export async function apiParsed<T>(
+  path: string,
+  parse: (value: unknown) => T,
+  method = "GET",
+  body?: unknown,
+): Promise<T> {
+  const value = await request(path, method, body);
+  try {
+    return parse(value);
+  } catch {
+    throw new ApiError(502, "Server returned an invalid response.");
+  }
+}
+
+async function request(path: string, method: string, body?: unknown): Promise<unknown> {
   const mutation = method !== "GET" && method !== "HEAD";
   const token = mutation ? (csrf || await requestCsrf()) : undefined;
   const response = await fetch(`/api${path}`, { method, credentials: "same-origin", headers: { "Content-Type": "application/json", ...(token ? { "X-CSRF-TOKEN": token } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -35,7 +53,13 @@ export async function api<T>(path: string, method = "GET", body?: unknown): Prom
     throw new ApiError(response.status, await readProblem(response));
   }
   const text = await response.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  if (!text) return undefined;
+  try {
+    const value: unknown = JSON.parse(text);
+    return value;
+  } catch {
+    throw new ApiError(502, "Server returned invalid JSON.");
+  }
 }
 
 export function resetCsrf() { csrf = ""; csrfRequest = undefined; }

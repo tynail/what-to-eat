@@ -1,0 +1,93 @@
+import type { HouseholdUser, Ingredient, Meal, MealRecipe, Me, Plan, Recipe, Snapshot, SnapshotRecipe } from "./types";
+
+type JsonObject = Record<string, unknown>;
+
+function isObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function object(value: unknown): JsonObject {
+  if (isObject(value)) return value;
+  throw new Error("object expected");
+}
+
+function string(value: unknown): string {
+  if (typeof value !== "string") throw new Error("string expected");
+  return value;
+}
+
+function number(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("number expected");
+  return value;
+}
+
+function integer(value: unknown): number {
+  const result = number(value);
+  if (!Number.isInteger(result)) throw new Error("integer expected");
+  return result;
+}
+
+function array(value: unknown): unknown[] {
+  if (!Array.isArray(value)) throw new Error("array expected");
+  return value;
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  return string(value);
+}
+
+function ingredient(value: unknown): Ingredient {
+  const row = object(value);
+  return { name: string(row.name), quantity: row.quantity === null ? null : number(row.quantity), unit: string(row.unit), note: string(row.note) };
+}
+
+function recipe(value: unknown): Recipe {
+  const row = object(value);
+  return { id: integer(row.id), version: string(row.version), name: string(row.name), description: string(row.description), servings: number(row.servings), steps: array(row.steps).map(string), ingredients: array(row.ingredients).map(ingredient) };
+}
+
+function mealRecipe(value: unknown): MealRecipe {
+  const row = object(value);
+  return { recipeId: integer(row.recipeId), servings: number(row.servings), name: optionalString(row.name) };
+}
+
+function meal(value: unknown): Meal {
+  const row = object(value);
+  return { id: integer(row.id), version: string(row.version), name: string(row.name), description: string(row.description), recipes: array(row.recipes).map(mealRecipe) };
+}
+
+function snapshotRecipe(value: unknown): SnapshotRecipe {
+  const row = object(value);
+  return { recipeId: integer(row.recipeId), name: string(row.name), description: string(row.description), servings: number(row.servings), steps: array(row.steps).map(string), ingredients: array(row.ingredients).map(ingredient) };
+}
+
+function snapshot(value: unknown): Snapshot {
+  const row = object(value);
+  return { mealId: integer(row.mealId), name: string(row.name), description: string(row.description), recipes: array(row.recipes).map(snapshotRecipe) };
+}
+
+function plan(value: unknown): Plan {
+  const row = object(value);
+  return { id: integer(row.id), week: string(row.week), version: string(row.version), meals: array(row.meals).map(snapshot) };
+}
+
+function householdUser(value: unknown): HouseholdUser {
+  const row = object(value);
+  return { id: string(row.id), username: string(row.username), disabled: row.disabled === true };
+}
+
+export const parseMe = (value: unknown): Me => {
+  const row = object(value);
+  return { id: string(row.id), username: string(row.username), isAdmin: row.isAdmin === true };
+};
+export const parseRecipes = (value: unknown): Recipe[] => array(value).map(recipe);
+export const parseMeals = (value: unknown): Meal[] => array(value).map(meal);
+export const parseSnapshots = (value: unknown): Snapshot[] => array(value).map(snapshot);
+export const parseSnapshot = snapshot;
+export const parsePlans = (value: unknown): Plan[] => array(value).map(plan);
+export const parseHouseholdUsers = (value: unknown): HouseholdUser[] => array(value).map(householdUser);
+export const parseLinkResponse = (value: unknown): { path: string; expiresAt: string } => {
+  const row = object(value);
+  return { path: string(row.path), expiresAt: string(row.expiresAt) };
+};

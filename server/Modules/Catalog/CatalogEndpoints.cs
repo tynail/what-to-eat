@@ -60,10 +60,10 @@ public static class CatalogEndpoints
         return Results.NoContent();
     }
 
-    static async Task<IResult> ListMeals(AppDb db) => Results.Ok(await MealQueries.Summaries(db).OrderBy(meal => meal.Name).ToListAsync());
+    static async Task<IResult> ListMeals(AppDb db) => Results.Ok((await MealQueries.Summaries(db)).OrderBy(meal => meal.Name));
     static async Task<IResult> GetMeal(int id, AppDb db)
     {
-        var meal = await MealQueries.Summaries(db).SingleOrDefaultAsync(meal => meal.Id == id);
+        var meal = (await MealQueries.Summaries(db)).SingleOrDefault(meal => meal.Id == id);
         return meal is null ? Results.NotFound() : Results.Ok(meal);
     }
 
@@ -108,7 +108,23 @@ public static class CatalogEndpoints
 public static class MealQueries
 {
     public static IQueryable<Meal> Full(AppDb db) => db.Meals.Where(meal => meal.HouseholdId == 1).Include(meal => meal.Recipes).ThenInclude(link => link.Recipe).ThenInclude(recipe => recipe.Ingredients);
-    public static IQueryable<MealSummary> Summaries(AppDb db) => db.Meals.Where(meal => meal.HouseholdId == 1).Select(meal => new MealSummary(meal.Id, meal.Name, meal.Description, meal.Version, meal.Recipes.OrderBy(link => link.Position).Select(link => new MealRecipeSummary(link.RecipeId, link.Servings, link.Recipe.Name)).ToList()));
+    public static async Task<List<MealSummary>> Summaries(AppDb db)
+    {
+        var meals = await db.Meals.Where(meal => meal.HouseholdId == 1)
+            .Include(meal => meal.Recipes)
+            .ThenInclude(link => link.Recipe)
+            .ToListAsync();
+
+        return meals.Select(meal => new MealSummary(
+            meal.Id,
+            meal.Name,
+            meal.Description,
+            meal.Version,
+            meal.Recipes.OrderBy(link => link.Position)
+                .Select(link => new MealRecipeSummary(link.RecipeId, link.Servings, link.Recipe.Name))
+                .ToList()))
+            .ToList();
+    }
 }
 
 public sealed record MealRecipeSummary(int RecipeId, decimal Servings, string Name);
