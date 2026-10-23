@@ -34,10 +34,11 @@ export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
   const recipeMode = kind === "recipes";
   const result = recipeMode ? recipes : meals;
   async function save(editor: EditorState) {
+    const collection = editor.kind === "recipe" ? "recipes" : "meals";
     if (editor.mode === "new") {
-      await api(`/${editor.kind}`, { method: "POST", body: editor.value });
+      await api(`/${collection}`, { method: "POST", body: editor.value });
     } else {
-      await api(`/${editor.kind}/${editor.id}`, {
+      await api(`/${collection}/${editor.id}`, {
         method: "PUT",
         body: { ...editor.value, version: editor.version },
       });
