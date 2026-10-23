@@ -1,4 +1,5 @@
 using MealPlanner;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.DataProtection;
@@ -68,7 +69,13 @@ app.Use(async (ctx, next) =>
     if (ctx.User.Identity?.IsAuthenticated == true)
     {
         var user = await ctx.RequestServices.GetRequiredService<UserManager<User>>().GetUserAsync(ctx.User);
-        if (user is null || user.Disabled || user.HouseholdId != 1) { await Results.Problem(statusCode: 403, detail: "Household access unavailable.").ExecuteAsync(ctx); return; }
+        if (user is null || user.Disabled)
+        {
+            await ctx.SignOutAsync(IdentityConstants.ApplicationScheme);
+            await Results.Problem(statusCode: 401, detail: "Account unavailable.").ExecuteAsync(ctx);
+            return;
+        }
+        if (user.HouseholdId != 1) { await Results.Problem(statusCode: 403, detail: "Household access unavailable.").ExecuteAsync(ctx); return; }
     }
     await next();
 });
