@@ -46,6 +46,7 @@ export function App() {
   );
 }
 
+/** Provides browser-history routing for the application. */
 export function AppRouter() {
   return (
     <BrowserRouter>

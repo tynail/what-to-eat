@@ -7,6 +7,7 @@ import {
 
 export const units = ingredientUnits;
 
+/** Returns a new unnamed ingredient with quantity 1 in count units and an empty note. */
 export function blankIngredient(): Ingredient {
   return { name: '', quantity: 1, unit: 'count', note: '' };
 }

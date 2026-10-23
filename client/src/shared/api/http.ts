@@ -1,4 +1,5 @@
 export class ApiError extends Error {
+  /** Creates an API failure carrying the HTTP status and caller-facing message. */
   constructor(
     readonly status: number,
     message: string,
@@ -15,6 +16,10 @@ type ApiRequestOptions =
   | { method?: 'GET' | 'HEAD'; body?: never }
   | { method: 'POST' | 'PUT' | 'DELETE'; body?: unknown };
 
+/**
+ * Returns a string problem detail when available, otherwise a status-specific fallback.
+ * JSON parsing and body-reading rejections are caught and converted to fallback text.
+ */
 async function readProblem(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => undefined);
   if (
@@ -30,6 +35,11 @@ async function readProblem(response: Response): Promise<string> {
   return 'Request failed. Reload and retry.';
 }
 
+/**
+ * Fetches and caches a CSRF token, sharing an in-flight request with concurrent callers.
+ * @throws {ApiError} For unsuccessful HTTP responses or a missing/non-string token.
+ * Network, response-reading, and JSON parsing errors propagate unchanged.
+ */
 async function requestCsrf(): Promise<string> {
   if (!csrfRequest) {
     csrfRequest = fetch('/api/auth/csrf', { credentials: 'same-origin' })
@@ -138,6 +148,10 @@ async function request(
   }
 }
 
+/**
+ * Clears the cached CSRF token and shared request reference without canceling a fetch.
+ * An already pending request can still populate the token cache when it resolves.
+ */
 export function resetCsrf() {
   csrf = '';
   csrfRequest = undefined;

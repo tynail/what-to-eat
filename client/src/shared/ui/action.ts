@@ -1,5 +1,10 @@
 import { useState } from 'react';
 
+/**
+ * Returns busy/error state and a runner that clears prior errors before each action.
+ * The runner catches failures, storing an Error message or a generic fallback, and
+ * resets busy state when the action settles; caught failures do not reject its promise.
+ */
 export function useAction() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

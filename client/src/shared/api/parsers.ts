@@ -14,26 +14,43 @@ import {
 
 type JsonObject = Record<string, unknown>;
 
+/** Checks for a non-null object that is not an array. */
 function isObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Returns the original non-null, non-array object.
+ * @throws {Error} If the value is not such an object.
+ */
 function object(value: unknown): JsonObject {
   if (isObject(value)) return value;
   throw new Error('object expected');
 }
 
+/**
+ * Accepts strings, including empty strings, without coercion.
+ * @throws {Error} If the value is not a string.
+ */
 function string(value: unknown): string {
   if (typeof value !== 'string') throw new Error('string expected');
   return value;
 }
 
+/**
+ * Accepts finite numbers without coercion or range restrictions.
+ * @throws {Error} If the value is not a finite number.
+ */
 function number(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value))
     throw new Error('number expected');
   return value;
 }
 
+/**
+ * Accepts finite integers, including zero and negative values.
+ * @throws {Error} If the value is not a finite integer.
+ */
 function integer(value: unknown): number {
   const result = number(value);
   if (!Number.isInteger(result)) throw new Error('integer expected');
@@ -49,6 +66,7 @@ function boolean(value: unknown): boolean {
   return value;
 }
 
+/** Checks for an exact, case-sensitive member of `ingredientUnits`. */
 function isIngredientUnit(value: string): value is IngredientUnit {
   return ingredientUnits.some((unit) => unit === value);
 }
@@ -63,6 +81,10 @@ function ingredientUnit(value: unknown): IngredientUnit {
   return unit;
 }
 
+/**
+ * Returns the original array without validating its elements.
+ * @throws {Error} If the value is not an array.
+ */
 function array(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error('array expected');
   return value;
@@ -83,6 +105,11 @@ function ingredient(value: unknown): Ingredient {
   };
 }
 
+/**
+ * Parses a recipe with integer identity, finite servings, steps, and ingredients.
+ * Does not require positive servings or nonempty strings or arrays.
+ * @throws {Error} If a required field or nested value fails validation.
+ */
 function recipe(value: unknown): Recipe {
   const row = object(value);
   return {
@@ -110,6 +137,10 @@ function mealRecipe(value: unknown): MealRecipeSummary {
   };
 }
 
+/**
+ * Parses a meal with versioned identity and recipe references; the recipe list may be empty.
+ * @throws {Error} If a required field or nested value fails validation.
+ */
 function meal(value: unknown): Meal {
   const row = object(value);
   return {
@@ -121,6 +152,11 @@ function meal(value: unknown): Meal {
   };
 }
 
+/**
+ * Parses recipe content identified by recipe ID without requiring a record version.
+ * Servings need only be finite; strings and arrays may be empty.
+ * @throws {Error} If a required field or nested value fails validation.
+ */
 function snapshotRecipe(value: unknown): SnapshotRecipe {
   const row = object(value);
   return {
@@ -133,6 +169,10 @@ function snapshotRecipe(value: unknown): SnapshotRecipe {
   };
 }
 
+/**
+ * Parses a meal snapshot with embedded recipe content; the recipe list may be empty.
+ * @throws {Error} If a required field or nested value fails validation.
+ */
 function snapshot(value: unknown): Snapshot {
   const row = object(value);
   return {
@@ -143,6 +183,10 @@ function snapshot(value: unknown): Snapshot {
   };
 }
 
+/**
+ * Parses a versioned plan with meal snapshots; `week` is checked only as a string.
+ * @throws {Error} If a required field or nested value fails validation.
+ */
 function plan(value: unknown): Plan {
   const row = object(value);
   return {
@@ -178,15 +222,31 @@ export const parseMe = (value: unknown): Me => {
     isAdmin: boolean(row.isAdmin),
   };
 };
+/**
+ * Parses an array of recipes, preserving order and allowing an empty array.
+ * @throws {Error} If the input is not an array or any entry fails validation.
+ */
 export const parseRecipes = (value: unknown): Recipe[] =>
   array(value).map(recipe);
 export const parseMeals = (value: unknown): Meal[] => array(value).map(meal);
+/**
+ * Parses an array of meal snapshots, preserving order and allowing an empty array.
+ * @throws {Error} If the input is not an array or any entry fails validation.
+ */
 export const parseSnapshots = (value: unknown): Snapshot[] =>
   array(value).map(snapshot);
 export const parseSnapshot = snapshot;
 export const parsePlans = (value: unknown): Plan[] => array(value).map(plan);
+/**
+ * Parses an array of household users, preserving order and allowing an empty array.
+ * @throws {Error} If the input is not an array or any entry fails validation.
+ */
 export const parseHouseholdUsers = (value: unknown): HouseholdUser[] =>
   array(value).map(householdUser);
+/**
+ * Parses an issued link's path and expiry as strings without validating URL or date syntax.
+ * @throws {Error} If the input is not an object or either required field is not a string.
+ */
 export const parseLinkResponse = (
   value: unknown,
 ): { path: string; expiresAt: string } => {

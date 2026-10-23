@@ -32,12 +32,18 @@ export function useCatalog(kind: CatalogKind) {
   const action = useAction();
   const result = kind === 'recipes' ? recipes : meals;
 
+  /** Refreshes the changed collection and, for recipe changes, dependent meals. */
   async function invalidate(collection: CatalogKind) {
     await queryClient.invalidateQueries({ queryKey: [collection] });
     if (collection === 'recipes')
       await queryClient.invalidateQueries({ queryKey: ['meals'] });
   }
 
+  /**
+   * Creates a record or updates it using its saved version, refreshes affected collections,
+   * and closes the editor on success. Request errors propagate to the caller;
+   * a failed request leaves the editor open.
+   */
   async function save(editor: EditorState) {
     const collection = editor.kind === 'recipe' ? 'recipes' : 'meals';
     if (editor.mode === 'new') {
@@ -52,6 +58,7 @@ export function useCatalog(kind: CatalogKind) {
     setEditing(null);
   }
 
+  /** Opens a blank editor for the active collection. */
   function create() {
     setEditing(
       kind === 'recipes'
@@ -60,6 +67,10 @@ export function useCatalog(kind: CatalogKind) {
     );
   }
 
+  /**
+   * Opens a local recipe snapshot or fetches a meal snapshot for viewing.
+   * Failures are caught and exposed through `error`.
+   */
   function preview(item: Recipe | Meal) {
     return action.run(async () => {
       if (isRecipe(item)) {
@@ -76,6 +87,10 @@ export function useCatalog(kind: CatalogKind) {
     });
   }
 
+  /**
+   * Confirms deletion, sends the record version, and refreshes affected collections.
+   * Cancellation does nothing; action failures are caught and exposed through `error`.
+   */
   function remove(item: Recipe | Meal) {
     if (!confirm(`Delete “${item.name}”? Saved weeks will keep their copy.`))
       return;

@@ -18,6 +18,7 @@ export type EditorState =
       value: MealInput;
     };
 
+/** Distinguishes catalog recipes from meals by the presence of `ingredients`. */
 export function isRecipe(value: Recipe | Meal): value is Recipe {
   return 'ingredients' in value;
 }

@@ -34,15 +34,21 @@ export function usePlanner() {
   const draft = draftState.kind === 'draft' ? draftState.meals : null;
   const selection = draft ?? saved?.meals ?? [];
 
+  /** Replaces unsaved meals while retaining the version captured by the first draft change. */
   function change(items: Snapshot[]) {
     setDraftState((current) => beginDraft(current, items, saved?.version));
   }
 
+  /** Returns to saved meals and prevents pending selection responses from applying. */
   function discard() {
     epoch.current += 1;
     setDraftState({ kind: 'saved' });
   }
 
+  /**
+   * Selects a nonempty week string, confirming before discarding an existing draft.
+   * Accepted selections discard the draft even when the week string is unchanged.
+   */
   function selectWeek(nextWeek: string) {
     if (nextWeek && (!draft || confirm('Discard unsaved selection?'))) {
       setWeek(nextWeek);
@@ -50,6 +56,10 @@ export function usePlanner() {
     }
   }
 
+  /**
+   * Requests a draft using the current count and excluded meal IDs.
+   * Ignores the result after a discard or accepted week selection; failures populate `error`.
+   */
   function generate() {
     return action.run(async () => {
       const requestEpoch = epoch.current;
@@ -61,6 +71,11 @@ export function usePlanner() {
     });
   }
 
+  /**
+   * Requests an alternative for `meal`, replacing the zero-based selection row `index`.
+   * Sends selected and excluded IDs; ignores results after discard or week selection.
+   * Failures are caught and exposed through `error`.
+   */
   function reroll(index: number, meal: Snapshot) {
     return action.run(async () => {
       const requestEpoch = epoch.current;
@@ -79,6 +94,11 @@ export function usePlanner() {
     });
   }
 
+  /**
+   * Fetches a snapshot for meal `id` and replaces the zero-based selection row `index`.
+   * An empty ID does nothing; results after discard or week selection are ignored.
+   * Failures are caught and exposed through `error`.
+   */
   function replace(index: number, id: string) {
     if (!id) return;
     return action.run(async () => {
@@ -91,6 +111,11 @@ export function usePlanner() {
     });
   }
 
+  /**
+   * Saves the draft with its captured base version, confirming before replacing a saved week.
+   * Refreshes plans and discards on success; request failures retain the draft and populate `error`.
+   * Does nothing when there is no draft or confirmation is declined.
+   */
   function save() {
     if (
       draftState.kind !== 'draft' ||
@@ -107,6 +132,10 @@ export function usePlanner() {
     });
   }
 
+  /**
+   * Confirms deletion of the saved plan using its version, then discards and refreshes plans.
+   * Does nothing without a saved plan or confirmation; action failures populate `error`.
+   */
   function deleteSaved() {
     if (!saved || !confirm('Delete this saved week?')) return;
     return action.run(async () => {

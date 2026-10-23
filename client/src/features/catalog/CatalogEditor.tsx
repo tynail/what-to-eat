@@ -30,12 +30,14 @@ export function CatalogEditor({
   const [value, setValue] = useState(initial);
   const action = useAction();
 
+  /** Replaces the recipe input while retaining editor metadata; ignores meal state. */
   function updateRecipe(recipe: RecipeInput) {
     setValue((current) =>
       current.kind === 'recipe' ? { ...current, value: recipe } : current,
     );
   }
 
+  /** Replaces the meal input while retaining editor metadata; ignores recipe state. */
   function updateMeal(meal: MealInput) {
     setValue((current) =>
       current.kind === 'meal' ? { ...current, value: meal } : current,
