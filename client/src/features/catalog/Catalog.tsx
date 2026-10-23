@@ -35,9 +35,9 @@ export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
   const result = recipeMode ? recipes : meals;
   async function save(editor: EditorState) {
     if (editor.mode === "new") {
-      await api(`/${editor.kind}`, { method: "POST", body: editor.value });
+      await api(`/${editor.kind === "recipe" ? "recipes" : "meals"}`, { method: "POST", body: editor.value });
     } else {
-      await api(`/${editor.kind}/${editor.id}`, {
+      await api(`/${editor.kind === "recipe" ? "recipes" : "meals"}/${editor.id}`, {
         method: "PUT",
         body: { ...editor.value, version: editor.version },
       });
