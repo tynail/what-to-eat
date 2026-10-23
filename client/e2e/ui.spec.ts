@@ -44,6 +44,7 @@ async function fixture(
     }
     const responses: Record<string, unknown> = {
       '/api/auth/csrf': { token: 'test-csrf' },
+      '/api/auth/redeem': {},
       '/api/recipes': populated ? [recipe] : [],
       '/api/meals': populated ? [meal] : [],
       '/api/plans': populated
@@ -120,6 +121,12 @@ test('sign-in layout, keyboard focus, and invalid invitation', async ({
     'rgb(188, 140, 50)',
   );
   await expect(page.getByLabel('Username')).toHaveCSS('outline-width', '3px');
+  await expect(
+    page.getByRole('button', { name: 'Sign in', exact: true }),
+  ).toHaveCSS('background-color', 'rgb(41, 84, 63)');
+  await expect(
+    page.getByRole('button', { name: 'Sign in', exact: true }),
+  ).toHaveCSS('font-weight', '600');
   await capture(page, info, 'login');
   await page.goto('/join#invalid');
   await expect(
@@ -131,6 +138,22 @@ test('sign-in layout, keyboard focus, and invalid invitation', async ({
     page.getByRole('button', { name: 'Save account' }),
   ).toBeDisabled();
   await capture(page, info, 'invalid-invite');
+  await page.goto('about:blank');
+  await page.goto(`/join#invite:${'A'.repeat(64)}`);
+  await page.getByLabel('Username').fill('New member');
+  await page.getByLabel('Password', { exact: true }).fill('MemberOnly!Test42');
+  await page.getByRole('button', { name: 'Save account' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'You’re all set.' }),
+  ).toBeVisible();
+  const signIn = page.getByRole('link', { name: 'Sign in', exact: true });
+  await expect(signIn).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(signIn).toHaveCSS('background-color', 'rgb(41, 84, 63)');
+  await capture(page, info, 'completed-invite');
+  if (info.project.name === 'desktop') {
+    await signIn.hover();
+    await expect(signIn).toHaveCSS('background-color', 'rgb(25, 62, 44)');
+  }
 });
 
 test('empty planner, generation error, and responsive navigation', async ({
@@ -162,6 +185,29 @@ test('empty planner, generation error, and responsive navigation', async ({
     'rgb(255, 240, 234)',
   );
   await capture(page, info, 'planner-error');
+  if (info.project.name === 'desktop') {
+    // Original CSS uses inclusive max-width breakpoints. Check both sides exactly.
+    for (const width of [760, 761, 1100, 1101]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(
+        page.getByRole('navigation', { name: 'Main navigation' }),
+      ).toHaveCSS('display', width <= 760 ? 'flex' : 'grid');
+      await expect(page.locator('aside')).toHaveCSS(
+        'position',
+        width <= 760 ? 'static' : 'sticky',
+      );
+      if (width > 760)
+        await expect(page.locator('aside')).toHaveCSS(
+          'width',
+          width <= 1100 ? '210px' : '254px',
+        );
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBeTruthy();
+    }
+  }
 });
 
 test('catalog, recipe editor, cooking dialog, saved planner, and settings', async ({
@@ -188,6 +234,15 @@ test('catalog, recipe editor, cooking dialog, saved planner, and settings', asyn
   await expect(
     page.getByRole('heading', { name: 'Lemon pasta', exact: true }),
   ).toBeVisible();
+  expect(
+    await page
+      .locator('article')
+      .locator('..')
+      .evaluate(
+        (element) =>
+          getComputedStyle(element).gridTemplateColumns.split(' ').length,
+      ),
+  ).toBe(info.project.name === 'mobile' ? 1 : 2);
   await capture(page, info, 'recipes');
   await page.getByRole('button', { name: 'Add recipe', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
