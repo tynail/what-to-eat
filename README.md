@@ -8,6 +8,10 @@ The backend is a modular monolith. `Modules/Access` owns identity, members, and 
 
 The frontend keeps HTTP and shared contracts under `client/src/shared/api`. Feature code must keep server state in React Query and unsaved form or planner state local to its screen. No module adds a repository layer or interface without a real alternate implementation.
 
+Pages compose focused components with typed data and event props. `usePlanner` owns weekly draft transitions and planning requests. `useCatalog` owns collection commands and dialog selection. `useAccess` and `useSettings` own account requests. React Query remains the owner of cached server records.
+
+Catalog inputs split into `RecipeFields`, `IngredientFields`, `CookingSteps`, and `MealFields`. These controlled components report replacement values to `CatalogEditor`, which owns the unsaved form and save errors. `editorState.ts` converts saved records into versioned editor inputs. Planner sections and `CatalogCard` render data and invoke callbacks, without issuing requests.
+
 ## Run locally
 
 Install .NET 10 SDK and Node 24. From the repository root:
@@ -111,12 +115,15 @@ Prettier does not support the repository's C#, Python, PowerShell, XML project/N
 ```powershell
 dotnet restore tests --configfile NuGet.Config
 dotnet test tests --no-restore
+npm test --prefix client
 npm run build --prefix client
 ```
 
 For one repeatable local check, run `pwsh -File scripts/verify.ps1`. Use `-SkipTests` when the local VSTest host cannot start; CI still runs the test command itself.
 
 Backend tests use real isolated SQLite databases and the ASP.NET test server. Coverage includes authentication, role isolation, CSRF, CRUD, reference blocking, stale versions, saved snapshots, single-use/expired links, random selection, and serving scaling.
+
+Client tests use Vitest, Testing Library, and jsdom. Run `npm test --prefix client` for one pass, or `npm run test:watch --prefix client` during development. Coverage includes ingredient and step edits, meal servings, catalog commands and cache isolation, access-link parsing, and planner draft versions, replacement, save failures, and discard confirmation. HTTP stubs exercise the real request and response parsers. Browser tests below exercise the running application and backend together.
 
 Browser tests require a running backend serving the built frontend and an **isolated disposable test database**, bootstrapped with a test admin. Set `E2E_USERNAME`, `E2E_PASSWORD`, and optionally `E2E_URL`; defaults are only test fixture credentials and never seed production. Tests create members and data, so never target production.
 

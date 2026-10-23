@@ -1,33 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Leaf } from 'lucide-react';
-import { useState } from 'react';
-import { api, resetCsrf } from '../../api';
-import { useAction } from '../../shared/ui/action';
+import { ArrowRight } from 'lucide-react';
 import { ErrorBox } from '../../shared/ui/page';
-
-type AccessLink =
-  | { kind: 'invite'; token: string }
-  | { kind: 'reset'; token: string }
-  | { kind: 'invalid' };
-
-/**
- * Parses a location hash such as `#invite:token` or `#reset:token` without decoding it.
- * Expects the leading `#` but does not validate it. Returns `invalid` for an unknown
- * kind, missing separator, or token other than exactly 64 uppercase hexadecimal characters.
- */
-function parseAccessLink(fragment: string): AccessLink {
-  const separator = fragment.indexOf(':');
-  if (separator < 0) return { kind: 'invalid' };
-
-  const kind = fragment.slice(1, separator);
-  const token = fragment.slice(separator + 1);
-  if (!token || token.includes(':')) return { kind: 'invalid' };
-  if (kind === 'invite') return { kind, token };
-  if (kind === 'reset') return { kind, token };
-  return { kind: 'invalid' };
-}
-
-const accessLink = parseAccessLink(location.hash);
+import { AccessStory } from './AccessStory';
+import { useAccess } from './useAccess';
 
 /**
  * Renders sign-in, or invite/password-reset redemption when `join` is true.
@@ -36,58 +10,27 @@ const accessLink = parseAccessLink(location.hash);
  * clears the CSRF cache and invalidates the current-user query.
  */
 export function Login({ join = false }: { join?: boolean }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [done, setDone] = useState(false);
-
-  const action = useAction();
-  const queryClient = useQueryClient();
-  const [link] = useState(() => accessLink);
-  const reset = join && link.kind === 'reset';
+  const {
+    username,
+    setUsername,
+    password,
+    setPassword,
+    done,
+    link,
+    reset,
+    busy,
+    error,
+    submit,
+  } = useAccess(join);
 
   return (
     <div className="auth-page">
-      <section className="auth-story">
-        <Leaf size={40} />
-        <p className="eyebrow">WELCOME TO WEEKLY TABLE</p>
-        <h1>
-          Less deciding.
-          <br />
-          More enjoying.
-        </h1>
-        <p>
-          Your favorite recipes. A fresh plan.
-          <br />A good week around the table.
-        </p>
-      </section>
+      <AccessStory />
       <form
         className="auth-form"
         onSubmit={(event) => {
           event.preventDefault();
-          void action.run(async () => {
-            if (join) {
-              if (link.kind === 'invalid')
-                throw new Error(
-                  'This link is invalid. Ask your household admin for a new one.',
-                );
-              await api('/auth/redeem', {
-                method: 'POST',
-                body: {
-                  token: link.token,
-                  username,
-                  password,
-                },
-              });
-              setDone(true);
-            } else {
-              await api('/auth/login', {
-                method: 'POST',
-                body: { username, password },
-              });
-              resetCsrf();
-              await queryClient.invalidateQueries({ queryKey: ['me'] });
-            }
-          });
+          void submit();
         }}
       >
         <p className="eyebrow">YOUR HOUSEHOLD KITCHEN</p>
@@ -136,12 +79,12 @@ export function Login({ join = false }: { join?: boolean }) {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
-            <ErrorBox error={action.error} />
+            <ErrorBox error={error} />
             <button
               className="primary"
-              disabled={action.busy || (join && link.kind === 'invalid')}
+              disabled={busy || (join && link.kind === 'invalid')}
             >
-              {action.busy ? 'Working…' : join ? 'Save account' : 'Sign in'}
+              {busy ? 'Working…' : join ? 'Save account' : 'Sign in'}
               <ArrowRight size={16} />
             </button>
             <small>
