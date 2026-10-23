@@ -23,28 +23,34 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
             : 'Bring recipes together into a meal you love.'
         }
       >
-        <button className="primary" onClick={catalog.create}>
+        <button
+          className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
+          onClick={catalog.create}
+        >
           <Plus size={18} />
           Add {recipeMode ? 'recipe' : 'meal'}
         </button>
       </Header>
-      <div className="toolbar">
-        <label className="search">
+      <div className="toolbar [&&]:flex [&&]:items-center [&&]:justify-between [&&]:gap-[15px] [&&]:mb-[23px] [@media(max-width:760px)]:[&&]:flex-wrap">
+        <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px] search [&&]:w-[350px] [&&]:m-0 [@media(max-width:760px)]:[&&]:w-full">
           Search {kind}
           <input
+            className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
             type="search"
             placeholder={`Find a favorite ${recipeMode ? 'recipe' : 'meal'}…`}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <span className="muted">
+        <span className="muted [&&]:text-[#768076]">
           {result.data?.length || 0} in your collection
         </span>
       </div>
       <ErrorBox error={catalog.error} />
       {result.isPending ? (
-        <p role="status">Loading collection…</p>
+        <p className="m-[0_0_12px]" role="status">
+          Loading collection…
+        </p>
       ) : !result.data?.length ? (
         <Empty
           title={`Your ${recipeMode ? 'recipe book' : 'meal collection'} starts here`}
@@ -55,7 +61,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
           }
         />
       ) : (
-        <div className="library-grid">
+        <div className="library-grid [&&]:grid [&&]:grid-cols-[repeat(2,_minmax(0,_1fr))] [&&]:gap-[20px] [@media(max-width:760px)]:[&&]:grid-cols-[1fr]">
           {result.data
             .filter((item) =>
               item.name.toLowerCase().includes(search.toLowerCase()),

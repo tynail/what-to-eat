@@ -135,6 +135,40 @@ npm run test:e2e
 
 Desktop and Pixel-sized Chromium flows cover invitations/login, recipe edits, meal creation, generation/save, history after deletion, dialog keyboard dismissal, and horizontal overflow. Screenshots and failure traces are written under ignored `test-results/`.
 
+For a disposable local browser fixture, install Chromium once, then run from the repository root:
+
+```powershell
+npx --prefix client playwright install chromium
+pwsh -File scripts/test-e2e.ps1
+# Reuse current builds, or select only the deterministic UI checks.
+pwsh -File scripts/test-e2e.ps1 -SkipBuild -TestFilter ui.spec.ts
+```
+
+The runner builds the client and backend, creates a unique temporary database, verifies the served JavaScript matches `client/dist`, and stops its server after success or failure. It never uses the development database. Use `-Port` to choose another local port.
+
+`e2e/ui.spec.ts` uses fixed API fixtures and a frozen date for login, invalid and completed invitations, empty/error/saved planner states, recipe and meal libraries, recipe editing, cooking dialogs, and household settings. Both desktop and mobile run these checks. Assertions cover keyboard focus, button and error styles, the completed-invitation link and hover color, library columns, modal bounds, overflow, and both sides of the exact 760px and 1100px navigation breakpoints. The separate `kitchen.spec.ts` exercises the real backend.
+
+Optional visual comparison uses local baselines from the same OS, browser version, and fonts:
+
+```powershell
+$env:UI_VISUAL_BASELINE = Join-Path $PWD '.local/ui-baselines'
+$env:UI_UPDATE_BASELINE = '1'
+pwsh -File scripts/test-e2e.ps1 -TestFilter ui.spec.ts
+Remove-Item Env:UI_UPDATE_BASELINE
+# After a styling change, rebuild and compare without replacing the baseline.
+pwsh -File scripts/test-e2e.ps1 -TestFilter ui.spec.ts
+```
+
+Baseline comparison checks all 22 captured states. Equal dimensions are required. Nonidentical images allow at most eight differing pixels, with a maximum absolute difference of one unit per RGBA channel. Any larger difference fails, and comparison metrics attach to the browser results. This bound handles measured Chromium backdrop-blur rounding: 21 states were byte-identical; the desktop recipe editor differed in eight pixels by one channel unit, with identical computed styles and layout. Unit tests enforce both tolerance limits. Missing baselines fail. Keep `UI_UPDATE_BASELINE` unset during verification. Baselines are deliberately local because font rendering differs across operating systems; CI always runs behavioral and computed-style checks and captures screenshots.
+
+## UI styling
+
+Tailwind CSS v4 runs through `@tailwindcss/vite`. Component styling lives in JSX utility classes beside each component. Exact existing colors and dimensions use arbitrary values, and scoped descendant variants preserve component-specific child styling. Semantic class markers remain where those descendant selectors need them. Scoped `&&` variants preserve the former component-class precedence over element defaults; class order alone does not control the CSS cascade.
+
+`client/src/style.css`, imported beside `main.tsx`, contains only Tailwind layer imports and document defaults for the font, page colors, box sizing, and body margin. Tailwind Preflight is omitted to preserve the existing browser defaults. Decorative plate geometry remains in `PlannerHero.css`, beside the component that imports it. Additional CSS must also live beside its related component.
+
+The migration started with passing UI tests and same-host screenshots before changing styles. All 20 original screenshots remained byte-identical after component extraction and the initial Tailwind conversion. Two completed-invitation baselines were then captured from the original refactor build to cover button-style links too. Final validation retained those original baselines and used the measured compositor bound described above. `scripts/migrate-tailwind.mjs` records the mechanical conversion; running it after migration is a no-op. It is a historical migration tool, not part of normal development or the build.
+
 ## API and security notes
 
 Authenticated OpenAPI document: `/openapi/v1.json`. REST routes are under `/api`: `auth`, `admin`, `recipes`, `meals`, `planner/generate`, `planner/reroll`, and `plans`. Mutation clients must first fetch `/api/auth/csrf`, retain its cookie, and send the returned token as `X-CSRF-TOKEN`. Refresh the token after login/logout. Sessions use HttpOnly SameSite cookies, not browser-storage tokens.

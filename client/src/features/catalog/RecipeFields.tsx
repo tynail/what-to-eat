@@ -16,9 +16,10 @@ export function RecipeFields({
 }) {
   return (
     <>
-      <label>
+      <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
         Base servings
         <input
+          className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
           type="number"
           required
           min="0.01"

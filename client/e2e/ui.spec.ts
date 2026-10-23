@@ -1,6 +1,7 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { compareVisuals } from '../src/test/visualComparison';
 
 const recipe = {
   id: 1,
@@ -93,11 +94,20 @@ async function capture(page: Page, info: TestInfo, name: string) {
     const baselinePath = path.join(baselineDirectory, `${name}.png`);
     if (process.env.UI_UPDATE_BASELINE === '1')
       await writeFile(baselinePath, screenshot);
-    else
+    else {
+      const comparison = compareVisuals(
+        screenshot,
+        await readFile(baselinePath),
+      );
+      await info.attach(`${name}-visual-comparison`, {
+        body: JSON.stringify(comparison),
+        contentType: 'application/json',
+      });
       expect(
-        screenshot.equals(await readFile(baselinePath)),
-        `Visual baseline changed: ${baselinePath}`,
+        comparison.matches,
+        `Visual baseline changed: ${baselinePath}; ${JSON.stringify(comparison)}`,
       ).toBeTruthy();
+    }
   }
 }
 

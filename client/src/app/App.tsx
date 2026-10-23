@@ -15,15 +15,18 @@ export function App() {
   if (location.pathname === '/join') return <Login join />;
   if (me.isPending)
     return (
-      <p className="loading" role="status">
+      <p
+        className="m-[0_0_12px] loading [&&]:text-center [&&]:m-[20vh_auto]"
+        role="status"
+      >
         Opening your kitchen…
       </p>
     );
   if (!me.data) return <Login />;
   return (
-    <div className="shell">
+    <div className="shell [&&]:grid [&&]:grid-cols-[254px_1fr] [&&]:min-h-screen [@media(max-width:1100px)]:[&&]:grid-cols-[210px_1fr] [@media(max-width:760px)]:[&&]:block">
       <Sidebar me={me.data} />
-      <main>
+      <main className="w-full max-w-[1240px] p-[46px_56px] m-[auto] [@media(min-width:1450px)]:pt-[55px] [@media(max-width:1100px)]:p-[34px_28px] [@media(max-width:760px)]:p-[27px_19px]">
         <Routes>
           <Route path="/" element={<Planner />} />
           <Route path="/recipes" element={<Catalog kind="recipes" />} />
@@ -31,7 +34,9 @@ export function App() {
           <Route path="/settings" element={<Settings me={me.data} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        <footer>Made for your household. Shared around your table.</footer>
+        <footer className="text-[10px] text-[#9aa18f] text-center m-[48px_0_0]">
+          Made for your household. Shared around your table.
+        </footer>
       </main>
     </div>
   );
