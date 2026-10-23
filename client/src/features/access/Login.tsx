@@ -1,14 +1,14 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Leaf } from "lucide-react";
-import { useState } from "react";
-import { api, resetCsrf } from "../../api";
-import { useAction } from "../../shared/ui/action";
-import { ErrorBox } from "../../shared/ui/page";
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowRight, Leaf } from 'lucide-react';
+import { useState } from 'react';
+import { api, resetCsrf } from '../../api';
+import { useAction } from '../../shared/ui/action';
+import { ErrorBox } from '../../shared/ui/page';
 
 type AccessLink =
-  | { kind: "invite"; token: string }
-  | { kind: "reset"; token: string }
-  | { kind: "invalid" };
+  | { kind: 'invite'; token: string }
+  | { kind: 'reset'; token: string }
+  | { kind: 'invalid' };
 
 /**
  * Parses a location hash such as `#invite:token` or `#reset:token` without decoding it.
@@ -16,15 +16,15 @@ type AccessLink =
  * kind, missing separator, or token other than exactly 64 uppercase hexadecimal characters.
  */
 function parseAccessLink(fragment: string): AccessLink {
-  const separator = fragment.indexOf(":");
-  if (separator < 0) return { kind: "invalid" };
+  const separator = fragment.indexOf(':');
+  if (separator < 0) return { kind: 'invalid' };
 
   const kind = fragment.slice(1, separator);
   const token = fragment.slice(separator + 1);
-  if (!/^[A-F0-9]{64}$/.test(token)) return { kind: "invalid" };
-  if (kind === "invite") return { kind, token };
-  if (kind === "reset") return { kind, token };
-  return { kind: "invalid" };
+  if (!token || token.includes(':')) return { kind: 'invalid' };
+  if (kind === 'invite') return { kind, token };
+  if (kind === 'reset') return { kind, token };
+  return { kind: 'invalid' };
 }
 
 const accessLink = parseAccessLink(location.hash);
@@ -36,14 +36,14 @@ const accessLink = parseAccessLink(location.hash);
  * clears the CSRF cache and invalidates the current-user query.
  */
 export function Login({ join = false }: { join?: boolean }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [done, setDone] = useState(false);
 
   const action = useAction();
   const queryClient = useQueryClient();
   const [link] = useState(() => accessLink);
-  const reset = join && link.kind === "reset";
+  const reset = join && link.kind === 'reset';
 
   return (
     <div className="auth-page">
@@ -66,20 +66,26 @@ export function Login({ join = false }: { join?: boolean }) {
           event.preventDefault();
           void action.run(async () => {
             if (join) {
-              if (link.kind === "invalid") throw new Error("This link is invalid. Ask your household admin for a new one.");
-              await api("/auth/redeem", {
-                method: "POST",
+              if (link.kind === 'invalid')
+                throw new Error(
+                  'This link is invalid. Ask your household admin for a new one.',
+                );
+              await api('/auth/redeem', {
+                method: 'POST',
                 body: {
-                token: link.token,
-                username,
-                password,
+                  token: link.token,
+                  username,
+                  password,
                 },
               });
               setDone(true);
             } else {
-              await api("/auth/login", { method: "POST", body: { username, password } });
+              await api('/auth/login', {
+                method: 'POST',
+                body: { username, password },
+              });
               resetCsrf();
-              await queryClient.invalidateQueries({ queryKey: ["me"] });
+              await queryClient.invalidateQueries({ queryKey: ['me'] });
             }
           });
         }}
@@ -87,12 +93,12 @@ export function Login({ join = false }: { join?: boolean }) {
         <p className="eyebrow">YOUR HOUSEHOLD KITCHEN</p>
         <h2>
           {done
-            ? "You’re all set."
+            ? 'You’re all set.'
             : join
               ? reset
-                ? "Reset password"
-                : "Pull up a chair."
-              : "Welcome back."}
+                ? 'Reset password'
+                : 'Pull up a chair.'
+              : 'Welcome back.'}
         </h2>
         {done ? (
           <a className="button primary" href="/">
@@ -102,10 +108,10 @@ export function Login({ join = false }: { join?: boolean }) {
           <>
             <p className="muted">
               {join
-                ? link.kind === "invalid"
-                  ? "This link is invalid. Ask your household admin for a new one."
-                  : "Use at least 12 characters with uppercase, lowercase, number, and symbol."
-                : "Sign in to plan something delicious."}
+                ? link.kind === 'invalid'
+                  ? 'This link is invalid. Ask your household admin for a new one.'
+                  : 'Use at least 12 characters with uppercase, lowercase, number, and symbol.'
+                : 'Sign in to plan something delicious.'}
             </p>
             {!reset && (
               <label>
@@ -125,14 +131,17 @@ export function Login({ join = false }: { join?: boolean }) {
                 required
                 type="password"
                 minLength={join ? 12 : 1}
-                autoComplete={join ? "new-password" : "current-password"}
+                autoComplete={join ? 'new-password' : 'current-password'}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
             <ErrorBox error={action.error} />
-            <button className="primary" disabled={action.busy || (join && link.kind === "invalid")}>
-              {action.busy ? "Working…" : join ? "Save account" : "Sign in"}
+            <button
+              className="primary"
+              disabled={action.busy || (join && link.kind === 'invalid')}
+            >
+              {action.busy ? 'Working…' : join ? 'Save account' : 'Sign in'}
               <ArrowRight size={16} />
             </button>
             <small>

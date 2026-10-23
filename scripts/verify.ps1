@@ -5,6 +5,9 @@ $workspace = Split-Path -Parent $PSScriptRoot
 $env:APPDATA = Join-Path $workspace '.local/appdata'
 $env:NUGET_PACKAGES = Join-Path $workspace '.local/packages'
 
+npm run format:check --prefix $workspace
+if ($LASTEXITCODE -ne 0) { throw 'npm run format:check failed' }
+
 dotnet build (Join-Path $workspace 'tests') --no-restore
 if ($LASTEXITCODE -ne 0) { throw 'dotnet build failed' }
 npm run build --prefix (Join-Path $workspace 'client')
