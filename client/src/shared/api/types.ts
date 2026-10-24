@@ -1,14 +1,61 @@
-export const ingredientUnits = ["count", "g", "kg", "oz", "lb", "ml", "l", "tsp", "tbsp", "cup", "unspecified"] as const;
-export type IngredientUnit = typeof ingredientUnits[number];
-export type Ingredient = { name: string; quantity: number | null; unit: IngredientUnit; note: string };
-export type Recipe = { id: number; version: string; name: string; description: string; servings: number; steps: string[]; ingredients: Ingredient[] };
-export type RecipeInput = Omit<Recipe, "id" | "version">;
+export const ingredientUnits = [
+  'count',
+  'g',
+  'kg',
+  'oz',
+  'lb',
+  'ml',
+  'l',
+  'tsp',
+  'tbsp',
+  'cup',
+  'unspecified',
+] as const;
+export type IngredientUnit = (typeof ingredientUnits)[number];
+export type Ingredient = {
+  name: string;
+  quantity: number | null;
+  unit: IngredientUnit;
+  note: string;
+};
+export type Recipe = {
+  id: number;
+  version: string;
+  name: string;
+  description: string;
+  servings: number;
+  steps: string[];
+  ingredients: Ingredient[];
+};
+export type RecipeInput = Omit<Recipe, 'id' | 'version'>;
 export type MealRecipeInput = { recipeId: number; servings: number };
 export type MealRecipeSummary = MealRecipeInput & { name: string };
-export type MealInput = { name: string; description: string; recipes: MealRecipeInput[] };
-export type Meal = { id: number; version: string; name: string; description: string; recipes: MealRecipeSummary[] };
-export type SnapshotRecipe = Omit<Recipe, "id" | "version"> & { recipeId: number };
-export type Snapshot = { mealId: number; name: string; description: string; recipes: SnapshotRecipe[] };
-export type Plan = { id: number; week: string; version: string; meals: Snapshot[] };
+export type MealInput = {
+  name: string;
+  description: string;
+  recipes: MealRecipeInput[];
+};
+export type Meal = {
+  id: number;
+  version: string;
+  name: string;
+  description: string;
+  recipes: MealRecipeSummary[];
+};
+export type SnapshotRecipe = Omit<Recipe, 'id' | 'version'> & {
+  recipeId: number;
+};
+export type Snapshot = {
+  mealId: number;
+  name: string;
+  description: string;
+  recipes: SnapshotRecipe[];
+};
+export type Plan = {
+  id: number;
+  week: string;
+  version: string;
+  meals: Snapshot[];
+};
 export type Me = { id: string; username: string; isAdmin: boolean };
 export type HouseholdUser = { id: string; username: string; disabled: boolean };

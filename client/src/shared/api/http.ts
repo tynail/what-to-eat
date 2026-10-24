@@ -1,31 +1,68 @@
 export class ApiError extends Error {
-  constructor(readonly status: number, message: string) { super(message); this.name = "ApiError"; }
+  /** Creates an API failure carrying the HTTP status and caller-facing message. */
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
-let csrf = "";
+let csrf = '';
 let csrfRequest: Promise<string> | undefined;
 
 type ApiRequestOptions =
-  | { method?: "GET" | "HEAD"; body?: never }
-  | { method: "POST" | "PUT" | "DELETE"; body?: unknown };
+  | { method?: 'GET' | 'HEAD'; body?: never }
+  | { method: 'POST' | 'PUT' | 'DELETE'; body?: unknown };
 
+/**
+ * Returns a string problem detail when available, otherwise a status-specific fallback.
+ * JSON parsing and body-reading rejections are caught and converted to fallback text.
+ */
 async function readProblem(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => undefined);
-  if (typeof body === "object" && body !== null && "detail" in body && typeof body.detail === "string") return body.detail;
-  if (response.status === 401) return "Please sign in.";
-  if (response.status === 429) return "Too many attempts. Wait a minute and retry.";
-  return "Request failed. Reload and retry.";
+  if (
+    typeof body === 'object' &&
+    body !== null &&
+    'detail' in body &&
+    typeof body.detail === 'string'
+  )
+    return body.detail;
+  if (response.status === 401) return 'Please sign in.';
+  if (response.status === 429)
+    return 'Too many attempts. Wait a minute and retry.';
+  return 'Request failed. Reload and retry.';
 }
 
+/**
+ * Fetches and caches a CSRF token, sharing an in-flight request with concurrent callers.
+ * @throws {ApiError} For unsuccessful HTTP responses or a missing/non-string token.
+ * Network, response-reading, and JSON parsing errors propagate unchanged.
+ */
 async function requestCsrf(): Promise<string> {
   if (!csrfRequest) {
-    csrfRequest = fetch("/api/auth/csrf", { credentials: "same-origin" }).then(async response => {
-      if (!response.ok) throw new ApiError(response.status, await readProblem(response));
-      const body: unknown = await response.json();
-      if (typeof body !== "object" || body === null || !("token" in body) || typeof body.token !== "string") throw new ApiError(500, "Security token unavailable. Reload and retry.");
-      csrf = body.token;
-      return csrf;
-    }).finally(() => { csrfRequest = undefined; });
+    csrfRequest = fetch('/api/auth/csrf', { credentials: 'same-origin' })
+      .then(async (response) => {
+        if (!response.ok)
+          throw new ApiError(response.status, await readProblem(response));
+        const body: unknown = await response.json();
+        if (
+          typeof body !== 'object' ||
+          body === null ||
+          !('token' in body) ||
+          typeof body.token !== 'string'
+        )
+          throw new ApiError(
+            500,
+            'Security token unavailable. Reload and retry.',
+          );
+        csrf = body.token;
+        return csrf;
+      })
+      .finally(() => {
+        csrfRequest = undefined;
+      });
   }
   return csrfRequest;
 }
@@ -40,7 +77,10 @@ async function requestCsrf(): Promise<string> {
  * or invalid JSON in the requested response. Network, serialization, response-reading,
  * and CSRF JSON parsing errors propagate unchanged.
  */
-export async function api(path: string, options: ApiRequestOptions = {}): Promise<unknown> {
+export async function api(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<unknown> {
   return request(path, options);
 }
 
@@ -62,7 +102,7 @@ export async function apiParsed<T>(
   try {
     return parse(value);
   } catch {
-    throw new ApiError(502, "Server returned an invalid response.");
+    throw new ApiError(502, 'Server returned an invalid response.');
   }
 }
 
@@ -77,12 +117,23 @@ export async function apiParsed<T>(
  * or invalid JSON from the requested endpoint. Network, serialization, response-reading,
  * and CSRF JSON parsing errors propagate unchanged.
  */
-async function request(path: string, options: ApiRequestOptions): Promise<unknown> {
-  const method = options.method ?? "GET";
-  const body = "body" in options ? options.body : undefined;
-  const mutation = method !== "GET" && method !== "HEAD";
-  const token = mutation ? (csrf || await requestCsrf()) : undefined;
-  const response = await fetch(`/api${path}`, { method, credentials: "same-origin", headers: { "Content-Type": "application/json", ...(token ? { "X-CSRF-TOKEN": token } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+async function request(
+  path: string,
+  options: ApiRequestOptions,
+): Promise<unknown> {
+  const method = options.method ?? 'GET';
+  const body = 'body' in options ? options.body : undefined;
+  const mutation = method !== 'GET' && method !== 'HEAD';
+  const token = mutation ? csrf || (await requestCsrf()) : undefined;
+  const response = await fetch(`/api${path}`, {
+    method,
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
   if (!response.ok) {
     if (response.status === 400) resetCsrf();
     throw new ApiError(response.status, await readProblem(response));
@@ -93,8 +144,15 @@ async function request(path: string, options: ApiRequestOptions): Promise<unknow
     const value: unknown = JSON.parse(text);
     return value;
   } catch {
-    throw new ApiError(502, "Server returned invalid JSON.");
+    throw new ApiError(502, 'Server returned invalid JSON.');
   }
 }
 
-export function resetCsrf() { csrf = ""; csrfRequest = undefined; }
+/**
+ * Clears the cached CSRF token and shared request reference without canceling a fetch.
+ * An already pending request can still populate the token cache when it resolves.
+ */
+export function resetCsrf() {
+  csrf = '';
+  csrfRequest = undefined;
+}

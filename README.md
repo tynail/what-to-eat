@@ -8,6 +8,10 @@ The backend is a modular monolith. `Modules/Access` owns identity, members, and 
 
 The frontend keeps HTTP and shared contracts under `client/src/shared/api`. Feature code must keep server state in React Query and unsaved form or planner state local to its screen. No module adds a repository layer or interface without a real alternate implementation.
 
+Pages compose focused components with typed data and event props. `usePlanner` owns weekly draft transitions and planning requests. `useCatalog` owns collection commands and dialog selection. `useAccess` and `useSettings` own account requests. React Query remains the owner of cached server records.
+
+Catalog inputs split into `RecipeFields`, `IngredientFields`, `CookingSteps`, and `MealFields`. These controlled components report replacement values to `CatalogEditor`, which owns the unsaved form and save errors. `editorState.ts` converts saved records into versioned editor inputs. Planner sections and `CatalogCard` render data and invoke callbacks, without issuing requests.
+
 ## Run locally
 
 Install .NET 10 SDK and Node 24. From the repository root:
@@ -93,17 +97,33 @@ Restore into a **new empty volume**, leaving the original volume intact for reco
 
 For local backup verification, set `DATA_DIRECTORY` and `BACKUP_DIRECTORY`, then run `python scripts/backup.py`. Restore the resulting directory under a separate `DataDirectory` and start the app against it.
 
+## Formatting
+
+Install the pinned client tools with `npm ci --prefix client`. From the repository root, run:
+
+```powershell
+npm run format
+npm run format:check
+```
+
+Both commands cover the entire repository, including the React client, browser tests, HTML, CSS, JSON configuration, Markdown documentation, and YAML workflows. Run them from the client directory with `npm run format` or `npm run format:check` as well. Prettier configuration lives in `.prettierrc.json`; `.prettierignore` excludes generated lockfiles, installed dependencies, build outputs, local data, and browser artifacts. CI and `scripts/verify.ps1` run the check without rewriting files.
+
+Prettier does not support the repository's C#, Python, PowerShell, XML project/NuGet files, Dockerfile, or Caddyfile without additional language-specific tools. These files are skipped by `--ignore-unknown`. No third-party formatting plugins are installed, and the check does not claim to validate those languages.
+
 ## Tests
 
 ```powershell
 dotnet restore tests --configfile NuGet.Config
 dotnet test tests --no-restore
+npm test --prefix client
 npm run build --prefix client
 ```
 
 For one repeatable local check, run `pwsh -File scripts/verify.ps1`. Use `-SkipTests` when the local VSTest host cannot start; CI still runs the test command itself.
 
 Backend tests use real isolated SQLite databases and the ASP.NET test server. Coverage includes authentication, role isolation, CSRF, CRUD, reference blocking, stale versions, saved snapshots, single-use/expired links, random selection, and serving scaling.
+
+Client tests use Vitest, Testing Library, and jsdom. Run `npm test --prefix client` for one pass, or `npm run test:watch --prefix client` during development. Coverage includes ingredient and step edits, meal servings, catalog commands and cache isolation, access-link parsing, and planner draft versions, replacement, save failures, and discard confirmation. HTTP stubs exercise the real request and response parsers. Browser tests below exercise the running application and backend together.
 
 Browser tests require a running backend serving the built frontend and an **isolated disposable test database**, bootstrapped with a test admin. Set `E2E_USERNAME`, `E2E_PASSWORD`, and optionally `E2E_URL`; defaults are only test fixture credentials and never seed production. Tests create members and data, so never target production.
 
@@ -114,6 +134,40 @@ npm run test:e2e
 ```
 
 Desktop and Pixel-sized Chromium flows cover invitations/login, recipe edits, meal creation, generation/save, history after deletion, dialog keyboard dismissal, and horizontal overflow. Screenshots and failure traces are written under ignored `test-results/`.
+
+For a disposable local browser fixture, install Chromium once, then run from the repository root:
+
+```powershell
+npx --prefix client playwright install chromium
+pwsh -File scripts/test-e2e.ps1
+# Reuse current builds, or select only the deterministic UI checks.
+pwsh -File scripts/test-e2e.ps1 -SkipBuild -TestFilter ui.spec.ts
+```
+
+The runner builds the client and backend, creates a unique temporary database, verifies the served JavaScript matches `client/dist`, and stops its server after success or failure. It never uses the development database. Use `-Port` to choose another local port.
+
+`e2e/ui.spec.ts` uses fixed API fixtures and a frozen date for login, invalid and completed invitations, empty/error/saved planner states, recipe and meal libraries, recipe editing, cooking dialogs, and household settings. Both desktop and mobile run these checks. Assertions cover keyboard focus, button and error styles, the completed-invitation link and hover color, library columns, modal bounds, overflow, and both sides of the exact 760px and 1100px navigation breakpoints. The separate `kitchen.spec.ts` exercises the real backend.
+
+Optional visual comparison uses local baselines from the same OS, browser version, and fonts:
+
+```powershell
+$env:UI_VISUAL_BASELINE = Join-Path $PWD '.local/ui-baselines'
+$env:UI_UPDATE_BASELINE = '1'
+pwsh -File scripts/test-e2e.ps1 -TestFilter ui.spec.ts
+Remove-Item Env:UI_UPDATE_BASELINE
+# After a styling change, rebuild and compare without replacing the baseline.
+pwsh -File scripts/test-e2e.ps1 -TestFilter ui.spec.ts
+```
+
+Baseline comparison checks all 22 captured states. Equal dimensions are required. Nonidentical images allow at most eight differing pixels, with a maximum absolute difference of one unit per RGBA channel. Any larger difference fails, and comparison metrics attach to the browser results. This bound handles measured Chromium backdrop-blur rounding: 21 states were byte-identical; the desktop recipe editor differed in eight pixels by one channel unit, with identical computed styles and layout. Unit tests enforce both tolerance limits. Missing baselines fail. Keep `UI_UPDATE_BASELINE` unset during verification. Baselines are deliberately local because font rendering differs across operating systems; CI always runs behavioral and computed-style checks and captures screenshots.
+
+## UI styling
+
+Tailwind CSS v4 runs through `@tailwindcss/vite`. Component styling lives in JSX utility classes beside each component. Exact existing colors and dimensions use arbitrary values, and scoped descendant variants preserve component-specific child styling. Semantic class markers remain where those descendant selectors need them. Scoped `&&` variants preserve the former component-class precedence over element defaults; class order alone does not control the CSS cascade.
+
+`client/src/style.css`, imported beside `main.tsx`, contains only Tailwind layer imports and document defaults for the font, page colors, box sizing, and body margin. Tailwind Preflight is omitted to preserve the existing browser defaults. Decorative plate geometry remains in `PlannerHero.css`, beside the component that imports it. Additional CSS must also live beside its related component.
+
+The migration started with passing UI tests and same-host screenshots before changing styles. All 20 original screenshots remained byte-identical after component extraction and the initial Tailwind conversion. Two completed-invitation baselines were then captured from the original refactor build to cover button-style links too. Final validation retained those original baselines and used the measured compositor bound described above. `scripts/migrate-tailwind.mjs` records the mechanical conversion; running it after migration is a no-op. It is a historical migration tool, not part of normal development or the build.
 
 ## API and security notes
 

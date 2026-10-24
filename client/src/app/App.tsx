@@ -1,43 +1,36 @@
-import { useQuery } from "@tanstack/react-query";
-import { BrowserRouter, NavLink, Routes, Route, Navigate } from "react-router-dom";
-import { Leaf, CalendarDays, BookOpen, Utensils, Settings as SettingsIcon } from "lucide-react";
-import { apiParsed, parseMe } from "../api";
-import { Settings } from "../features/settings/Settings";
-import { Login } from "../features/access/Login";
-import { Catalog } from "../features/catalog/Catalog";
-import { Planner } from "../features/planning/Planner";
+import { useQuery } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Sidebar } from './Sidebar';
+import { apiParsed, parseMe } from '../api';
+import { Settings } from '../features/settings/Settings';
+import { Login } from '../features/access/Login';
+import { Catalog } from '../features/catalog/Catalog';
+import { Planner } from '../features/planning/Planner';
 
+/**
+ * Shows account redemption at `/join`; elsewhere waits for the current-user query
+ * and renders sign-in when no user is available, or the household routes otherwise.
+ */
 export function App() {
-  const me = useQuery({ queryKey: ["me"], queryFn: () => apiParsed("/auth/me", parseMe) });
-  if (location.pathname === "/join") return <Login join />;
+  const me = useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiParsed('/auth/me', parseMe),
+  });
+  if (location.pathname === '/join') return <Login join />;
   if (me.isPending)
-    return <p className="loading" role="status">Opening your kitchen…</p>;
+    return (
+      <p
+        className="m-[0_0_12px] loading [&&]:text-center [&&]:m-[20vh_auto]"
+        role="status"
+      >
+        Opening your kitchen…
+      </p>
+    );
   if (!me.data) return <Login />;
   return (
-    <div className="shell">
-      <aside>
-        <a className="brand" href="/">
-          <span className="brand-icon"><Leaf /></span>
-          <span>Weekly Table<small>A little less “what’s for dinner?”</small></span>
-        </a>
-        <p className="nav-label">YOUR KITCHEN</p>
-        <nav aria-label="Main navigation">
-          <NavLink to="/" end><CalendarDays />This Week</NavLink>
-          <NavLink to="/meals"><Utensils />Meals</NavLink>
-          <NavLink to="/recipes"><BookOpen />Recipes</NavLink>
-          <NavLink to="/settings"><SettingsIcon />Settings</NavLink>
-        </nav>
-        <div className="sidebar-note">
-          <Leaf />
-          <p>Good food.<br />One less decision.</p>
-          <small>Make room for the meals you love.</small>
-        </div>
-        <div className="account">
-          <span className="avatar">{me.data.username.slice(0, 1).toUpperCase()}</span>
-          <div>{me.data.username}<small>Our household</small></div>
-        </div>
-      </aside>
-      <main>
+    <div className="shell [&&]:grid [&&]:grid-cols-[254px_1fr] [&&]:min-h-screen [@media(max-width:1100px)]:[&&]:grid-cols-[210px_1fr] [@media(max-width:760px)]:[&&]:block">
+      <Sidebar me={me.data} />
+      <main className="w-full max-w-[1240px] p-[46px_56px] m-[auto] [@media(min-width:1450px)]:pt-[55px] [@media(max-width:1100px)]:p-[34px_28px] [@media(max-width:760px)]:p-[27px_19px]">
         <Routes>
           <Route path="/" element={<Planner />} />
           <Route path="/recipes" element={<Catalog kind="recipes" />} />
@@ -45,12 +38,19 @@ export function App() {
           <Route path="/settings" element={<Settings me={me.data} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        <footer>Made for your household. Shared around your table.</footer>
+        <footer className="text-[10px] text-[#9aa18f] text-center m-[48px_0_0]">
+          Made for your household. Shared around your table.
+        </footer>
       </main>
     </div>
   );
 }
 
+/** Provides browser-history routing for the application. */
 export function AppRouter() {
-  return <BrowserRouter><App /></BrowserRouter>;
+  return (
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  );
 }

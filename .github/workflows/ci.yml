@@ -17,6 +17,8 @@ jobs:
       - run: dotnet test tests --no-restore
       - run: pwsh -File scripts/check-boundaries.ps1
       - run: npm ci --prefix client
+      - run: npm test --prefix client
+      - run: npm run format:check
       - run: npm run build --prefix client
       - run: mkdir -p server/wwwroot && cp -r client/dist/* server/wwwroot/
       - run: npx playwright install --with-deps chromium

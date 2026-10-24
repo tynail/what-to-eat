@@ -1,44 +1,11 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
-import { type Ingredient, type Meal, type MealInput, type Recipe, type RecipeInput } from "../../api";
-import { blankIngredient, units } from "./factories";
-import { useAction } from "../../shared/ui/action";
-import { ErrorBox } from "../../shared/ui/page";
-import { Modal } from "../../shared/ui/Modal";
-
-export type EditorState =
-  | { kind: "recipe"; mode: "new"; value: RecipeInput }
-  | { kind: "recipe"; mode: "saved"; id: number; version: string; value: RecipeInput }
-  | { kind: "meal"; mode: "new"; value: MealInput }
-  | { kind: "meal"; mode: "saved"; id: number; version: string; value: MealInput };
-
-function isRecipe(value: Recipe | Meal): value is Recipe {
-  return "ingredients" in value;
-}
-
-/**
- * Builds saved editor state with identity and version separate from the input payload,
- * omitting recipe names from meal references. Recipe ingredient and step arrays are
- * shared with the input record; callers needing an independent copy must clone it first.
- */
-export function editRecord(item: Recipe | Meal): EditorState {
-  if (isRecipe(item)) {
-    const { id, version, ...value } = item;
-    return { kind: "recipe", mode: "saved", id, version, value };
-  }
-
-  const { id, version, ...meal } = item;
-  return {
-    kind: "meal",
-    mode: "saved",
-    id,
-    version,
-    value: {
-      ...meal,
-      recipes: meal.recipes.map(({ recipeId, servings }) => ({ recipeId, servings })),
-    },
-  };
-}
+import { useState } from 'react';
+import type { MealInput, Recipe, RecipeInput } from '../../api';
+import { useAction } from '../../shared/ui/action';
+import { ErrorBox } from '../../shared/ui/page';
+import { Modal } from '../../shared/ui/Modal';
+import type { EditorState } from './editorState';
+import { RecipeFields } from './RecipeFields';
+import { MealFields } from './MealFields';
 
 /**
  * Edits a recipe or meal in a modal, displaying save failures and disabling fields
@@ -49,7 +16,12 @@ export function editRecord(item: Recipe | Meal): EditorState {
  * rejections are caught and displayed. `close` handles dismissal and is not
  * automatically called after a successful save.
  */
-export function CatalogEditor({ initial, recipes, save, close }: {
+export function CatalogEditor({
+  initial,
+  recipes,
+  save,
+  close,
+}: {
   initial: EditorState;
   recipes: Recipe[];
   save: (editor: EditorState) => Promise<void>;
@@ -58,193 +30,95 @@ export function CatalogEditor({ initial, recipes, save, close }: {
   const [value, setValue] = useState(initial);
   const action = useAction();
 
+  /** Replaces the recipe input while retaining editor metadata; ignores meal state. */
   function updateRecipe(recipe: RecipeInput) {
-    setValue(current => current.kind === "recipe"
-      ? { ...current, value: recipe }
-      : current);
+    setValue((current) =>
+      current.kind === 'recipe' ? { ...current, value: recipe } : current,
+    );
   }
 
+  /** Replaces the meal input while retaining editor metadata; ignores recipe state. */
   function updateMeal(meal: MealInput) {
-    setValue(current => current.kind === "meal"
-      ? { ...current, value: meal }
-      : current);
+    setValue((current) =>
+      current.kind === 'meal' ? { ...current, value: meal } : current,
+    );
   }
 
   return (
-    <Modal title={`${value.mode === "saved" ? "Edit" : "New"} ${value.kind}`} close={close}>
-      <form onSubmit={event => {
-        event.preventDefault();
-        void action.run(() => save(value));
-      }}>
-        <fieldset disabled={action.busy}>
-          <label>
+    <Modal
+      title={`${value.mode === 'saved' ? 'Edit' : 'New'} ${value.kind}`}
+      close={close}
+    >
+      <form
+        className="[&_h3]:mt-[26px]"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void action.run(() => save(value));
+        }}
+      >
+        <fieldset className="border-0 m-0 p-0 min-w-0" disabled={action.busy}>
+          <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
             Name
-            <input required maxLength={120} value={value.value.name}
-              onChange={event => {
+            <input
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
+              required
+              maxLength={120}
+              value={value.value.name}
+              onChange={(event) => {
                 const name = event.target.value;
-                setValue(current => current.kind === "recipe"
-                  ? { ...current, value: { ...current.value, name } }
-                  : { ...current, value: { ...current.value, name } });
-              }} />
+                setValue((current) =>
+                  current.kind === 'recipe'
+                    ? { ...current, value: { ...current.value, name } }
+                    : { ...current, value: { ...current.value, name } },
+                );
+              }}
+            />
           </label>
-          <label>
+          <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
             Description
-            <textarea maxLength={4000} value={value.value.description}
-              onChange={event => {
+            <textarea
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0 min-h-[75px] resize-y"
+              maxLength={4000}
+              value={value.value.description}
+              onChange={(event) => {
                 const description = event.target.value;
-                setValue(current => current.kind === "recipe"
-                  ? { ...current, value: { ...current.value, description } }
-                  : { ...current, value: { ...current.value, description } });
-              }} />
+                setValue((current) =>
+                  current.kind === 'recipe'
+                    ? { ...current, value: { ...current.value, description } }
+                    : { ...current, value: { ...current.value, description } },
+                );
+              }}
+            />
           </label>
-          {value.kind === "recipe"
-            ? <RecipeFields recipe={value.value} update={updateRecipe} />
-            : <MealFields meal={value.value} recipes={recipes} update={updateMeal} />}
+          {value.kind === 'recipe' ? (
+            <RecipeFields recipe={value.value} update={updateRecipe} />
+          ) : (
+            <MealFields
+              meal={value.value}
+              recipes={recipes}
+              update={updateMeal}
+            />
+          )}
           <ErrorBox error={action.error} />
-          <div className="form-actions">
-            <button type="button" onClick={close}>Cancel</button>
-            <button className="primary" disabled={value.kind === "meal" && value.value.recipes.length === 0}>
-              {action.busy ? "Saving…" : `Save ${value.kind}`}
+          <div className="form-actions [&&]:flex [&&]:justify-end [&&]:gap-[10px] [&&]:[border-top:1px_solid_#e3e8da] [&&]:mt-[26px] [&&]:pt-[18px]">
+            <button
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
+              type="button"
+              onClick={close}
+            >
+              Cancel
+            </button>
+            <button
+              className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
+              disabled={
+                value.kind === 'meal' && value.value.recipes.length === 0
+              }
+            >
+              {action.busy ? 'Saving…' : `Save ${value.kind}`}
             </button>
           </div>
         </fieldset>
       </form>
     </Modal>
-  );
-}
-
-/**
- * Renders recipe inputs and reports replacement recipe values through `update`.
- * An unspecified unit permits a blank quantity, stored as null. Removal buttons
- * preserve the last ingredient and step; cooking steps can be moved up one position.
- */
-function RecipeFields({ recipe, update }: { recipe: RecipeInput; update: (recipe: RecipeInput) => void }) {
-  /** Patches the ingredient at a zero-based index; an unmatched index leaves all rows unchanged. */
-  function updateIngredient(index: number, patch: Partial<Ingredient>) {
-    update({
-      ...recipe,
-      ingredients: recipe.ingredients.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, ...patch } : item,
-      ),
-    });
-  }
-
-  return (
-    <>
-      <label>
-        Base servings
-        <input type="number" required min="0.01" max="1000" step="any" value={recipe.servings}
-          onChange={event => update({ ...recipe, servings: Number(event.target.value) })} />
-      </label>
-      <h3>Ingredients</h3>
-      {recipe.ingredients.map((ingredient, index) => (
-        <div className="ingredient-row" key={index}>
-          <label>
-            Ingredient {index + 1}
-            <input required maxLength={120} value={ingredient.name}
-              onChange={event => updateIngredient(index, { name: event.target.value })} />
-          </label>
-          <label>
-            Quantity
-            <input type="number" required={ingredient.unit !== "unspecified"} min="0.0001" max="1000000" step="any"
-              value={ingredient.quantity ?? ""}
-              onChange={event => updateIngredient(index, {
-                quantity: event.target.value === "" ? null : Number(event.target.value),
-              })} />
-          </label>
-          <label>
-            Unit
-            <select value={ingredient.unit} onChange={event => {
-              const unit = units.find(candidate => candidate === event.target.value);
-              if (unit) updateIngredient(index, { unit });
-            }}>
-              {units.map(unit => <option key={unit}>{unit}</option>)}
-            </select>
-          </label>
-          <label>
-            Note
-            <input maxLength={500} value={ingredient.note}
-              onChange={event => updateIngredient(index, { note: event.target.value })} />
-          </label>
-          <button type="button" aria-label={`Remove ingredient ${index + 1}`}
-            disabled={recipe.ingredients.length === 1}
-            onClick={() => update({ ...recipe, ingredients: recipe.ingredients.filter((_, itemIndex) => itemIndex !== index) })}>×</button>
-        </div>
-      ))}
-      <button type="button" onClick={() => update({ ...recipe, ingredients: [...recipe.ingredients, blankIngredient()] })}>
-        <Plus size={16} /> Add ingredient
-      </button>
-      <h3>Cooking steps</h3>
-      {recipe.steps.map((step, index) => (
-        <div className="step-row" key={index}>
-          <label>
-            Step {index + 1}
-            <textarea required maxLength={4000} value={step}
-              onChange={event => update({
-                ...recipe,
-                steps: recipe.steps.map((current, stepIndex) => stepIndex === index ? event.target.value : current),
-              })} />
-          </label>
-          <button type="button" aria-label={`Move step ${index + 1} up`} disabled={index === 0}
-            onClick={() => {
-              const steps = [...recipe.steps];
-              const current = steps[index];
-              const previous = steps[index - 1];
-              if (current === undefined || previous === undefined) return;
-              steps[index - 1] = current;
-              steps[index] = previous;
-              update({ ...recipe, steps });
-            }}>↑</button>
-          <button type="button" aria-label={`Remove step ${index + 1}`} disabled={recipe.steps.length === 1}
-            onClick={() => update({ ...recipe, steps: recipe.steps.filter((_, stepIndex) => stepIndex !== index) })}>×</button>
-        </div>
-      ))}
-      <button type="button" onClick={() => update({ ...recipe, steps: [...recipe.steps, ""] })}>
-        <Plus size={16} /> Add step
-      </button>
-    </>
-  );
-}
-
-/**
- * Renders recipe selection and target servings, reporting replacement meal values
- * through `update`. Newly selected recipes start with their base servings; the
- * target-servings inputs accept values from 0.01 through 1000, inclusive.
- */
-function MealFields({ meal, recipes, update }: { meal: MealInput; recipes: Recipe[]; update: (meal: MealInput) => void }) {
-  return (
-    <>
-      <h3>Recipes in this meal</h3>
-      <p className="muted">Choose recipes, then set how many servings to cook.</p>
-      {recipes.length === 0 && <p>Add a recipe in your recipe book first.</p>}
-      {recipes.map(recipe => {
-        const selected = meal.recipes.find(item => item.recipeId === recipe.id);
-        return (
-          <div className="recipe-choice" key={recipe.id}>
-            <label className="check">
-              <input type="checkbox" checked={selected !== undefined} onChange={event => update({
-                ...meal,
-                recipes: event.target.checked
-                  ? [...meal.recipes, { recipeId: recipe.id, servings: recipe.servings }]
-                  : meal.recipes.filter(item => item.recipeId !== recipe.id),
-              })} />
-              {recipe.name}
-            </label>
-            {selected && (
-              <label>
-                Target servings
-                <input aria-label={`Servings for ${recipe.name}`} required type="number" min="0.01" max="1000" step="any"
-                  value={selected.servings} onChange={event => update({
-                    ...meal,
-                    recipes: meal.recipes.map(item => item.recipeId === recipe.id
-                      ? { ...item, servings: Number(event.target.value) }
-                      : item),
-                  })} />
-              </label>
-            )}
-          </div>
-        );
-      })}
-    </>
   );
 }

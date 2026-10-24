@@ -1,182 +1,94 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Plus, Utensils } from "lucide-react";
-import { api, apiParsed, parseMeals, parseRecipes, parseSnapshot, type Meal, type Recipe, type Snapshot, type SnapshotRecipe } from "../../api";
-import { blankMeal, blankRecipe } from "./factories";
-import { CatalogEditor, editRecord, type EditorState } from "./CatalogEditor";
-import { useAction } from "../../shared/ui/action";
-import { Empty, ErrorBox, Header } from "../../shared/ui/page";
-import { CookingDetail } from "../../shared/cooking/CookingDetail";
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Empty, ErrorBox, Header } from '../../shared/ui/page';
+import { CookingDetail } from '../../shared/cooking/CookingDetail';
+import { CatalogEditor } from './CatalogEditor';
+import { CatalogCard } from './CatalogCard';
+import { useCatalog, type CatalogKind } from './useCatalog';
 
-function isRecipe(value: Recipe | Meal): value is Recipe {
-  return "ingredients" in value;
-}
-
-/** Converts a recipe for the cooking view, replacing its ID with `recipeId` and omitting its version. */
-function recipeSnapshot(recipe: Recipe): SnapshotRecipe {
-  const { id, version, ...snapshot } = recipe;
-  return { ...snapshot, recipeId: id };
-}
-
-/** Displays the requested collection with name search, cooking previews, and create, edit, and delete actions. */
-export function Catalog({ kind }: { kind: "recipes" | "meals" }) {
-  const recipes = useQuery({
-    queryKey: ["recipes"],
-    queryFn: () => apiParsed("/recipes", parseRecipes),
-  });
-  const meals = useQuery({
-    queryKey: ["meals"],
-    queryFn: () => apiParsed("/meals", parseMeals),
-  });
-  const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<EditorState | null>(null);
-  const [view, setView] = useState<Snapshot | null>(null);
-  const action = useAction();
-  const qc = useQueryClient();
-  const recipeMode = kind === "recipes";
-  const result = recipeMode ? recipes : meals;
-  /**
-   * Submits the editor's input, including its version when updating, then invalidates
-   * the collection (and meals after a recipe change) and closes the editor.
-   * Request and invalidation errors propagate to the editor's submission handler.
-   */
-  async function save(editor: EditorState) {
-    const collection = editor.kind === "recipe" ? "recipes" : "meals";
-    if (editor.mode === "new") {
-      await api(`/${collection}`, { method: "POST", body: editor.value });
-    } else {
-      await api(`/${collection}/${editor.id}`, {
-        method: "PUT",
-        body: { ...editor.value, version: editor.version },
-      });
-    }
-    await qc.invalidateQueries({ queryKey: [editor.kind === "recipe" ? "recipes" : "meals"] });
-    if (editor.kind === "recipe") await qc.invalidateQueries({ queryKey: ["meals"] });
-    setEditing(null);
-  }
+/** Composes collection search, cards, and dialogs around collection commands. */
+export function Catalog({ kind }: { kind: CatalogKind }) {
+  const catalog = useCatalog(kind);
+  const [search, setSearch] = useState('');
+  const recipeMode = kind === 'recipes';
+  const { result } = catalog;
   return (
     <>
       <Header
         eyebrow="THE HOUSEHOLD COLLECTION"
-        title={recipeMode ? "Your recipe book" : "Meals worth repeating"}
+        title={recipeMode ? 'Your recipe book' : 'Meals worth repeating'}
         text={
           recipeMode
-            ? "The ingredients and little details that make it yours."
-            : "Bring recipes together into a meal you love."
+            ? 'The ingredients and little details that make it yours.'
+            : 'Bring recipes together into a meal you love.'
         }
       >
         <button
-          className="primary"
-          onClick={() => setEditing(recipeMode
-            ? { kind: "recipe", mode: "new", value: blankRecipe() }
-            : { kind: "meal", mode: "new", value: blankMeal() })}
+          className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
+          onClick={catalog.create}
         >
           <Plus size={18} />
-          Add {recipeMode ? "recipe" : "meal"}
+          Add {recipeMode ? 'recipe' : 'meal'}
         </button>
       </Header>
-      <div className="toolbar">
-        <label className="search">
+      <div className="toolbar [&&]:flex [&&]:items-center [&&]:justify-between [&&]:gap-[15px] [&&]:mb-[23px] [@media(max-width:760px)]:[&&]:flex-wrap">
+        <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px] search [&&]:w-[350px] [&&]:m-0 [@media(max-width:760px)]:[&&]:w-full">
           Search {kind}
           <input
+            className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
             type="search"
-            placeholder={`Find a favorite ${recipeMode ? "recipe" : "meal"}…`}
+            placeholder={`Find a favorite ${recipeMode ? 'recipe' : 'meal'}…`}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <span className="muted">
+        <span className="muted [&&]:text-[#768076]">
           {result.data?.length || 0} in your collection
         </span>
       </div>
-      <ErrorBox error={action.error || result.error} />
+      <ErrorBox error={catalog.error} />
       {result.isPending ? (
-        <p role="status">Loading collection…</p>
+        <p className="m-[0_0_12px]" role="status">
+          Loading collection…
+        </p>
       ) : !result.data?.length ? (
         <Empty
-          title={`Your ${recipeMode ? "recipe book" : "meal collection"} starts here`}
+          title={`Your ${recipeMode ? 'recipe book' : 'meal collection'} starts here`}
           text={
             recipeMode
-              ? "Add your first recipe, then combine recipes into meals."
-              : "Add a meal and choose its recipes. It will be ready for your weekly shuffle."
+              ? 'Add your first recipe, then combine recipes into meals.'
+              : 'Add a meal and choose its recipes. It will be ready for your weekly shuffle.'
           }
         />
       ) : (
-        <div className="library-grid">
+        <div className="library-grid [&&]:grid [&&]:grid-cols-[repeat(2,_minmax(0,_1fr))] [&&]:gap-[20px] [@media(max-width:760px)]:[&&]:grid-cols-[1fr]">
           {result.data
-            .filter((x) => x.name.toLowerCase().includes(search.toLowerCase()))
-            .map((item) => {
-              return <article className="library-card" key={item.id}>
-                <div className="card-top">
-                  <span className="food-icon">
-                    {isRecipe(item) ? <BookOpen /> : <Utensils />}
-                  </span>
-                  <span className="pill">
-                    {isRecipe(item) ? `${item.servings} servings` : `${item.recipes.length} recipes`}
-                  </span>
-                </div>
-                <h2>{item.name}</h2>
-                <p className="muted">
-                  {item.description ||
-                    (isRecipe(item)
-                      ? "A household favorite in the making."
-                      : item.recipes.map((r) => r.name).join(" + "))}
-                </p>
-                <div className="card-actions">
-                  <button
-                    onClick={() =>
-                      void action.run(async () => {
-                        setView(
-                          isRecipe(item)
-                           ? {
-                                 mealId: item.id,
-                                 name: item.name,
-                                 description: item.description,
-                                 recipes: [recipeSnapshot(item)],
-                               }
-                            : await apiParsed(`/meals/${item.id}/snapshot`, parseSnapshot),
-                        );
-                      })
-                    }
-                  >
-                    View
-                  </button>
-                   <button onClick={() => setEditing(editRecord(structuredClone(item)))}>
-                    Edit
-                  </button>
-                  <button
-                    className="danger text-button"
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Delete “${item.name}”? Saved weeks will keep their copy.`,
-                        )
-                      )
-                        void action.run(async () => {
-                          await api(`/${kind}/${item.id}?version=${item.version}`, { method: "DELETE" });
-                          await qc.invalidateQueries({ queryKey: [kind] });
-                          if (recipeMode)
-                            await qc.invalidateQueries({ queryKey: ["meals"] });
-                        });
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>;
-            })}
+            .filter((item) =>
+              item.name.toLowerCase().includes(search.toLowerCase()),
+            )
+            .map((item) => (
+              <CatalogCard
+                key={item.id}
+                item={item}
+                onView={(item) => void catalog.preview(item)}
+                onEdit={catalog.edit}
+                onDelete={(item) => void catalog.remove(item)}
+              />
+            ))}
         </div>
       )}
-      {editing && (
+      {catalog.editing && (
         <CatalogEditor
-          key={`${editing.kind}-${editing.mode}-${editing.mode === "saved" ? editing.id : "new"}`}
-          initial={editing}
-          recipes={recipes.data || []}
-          save={save}
-          close={() => setEditing(null)}
+          key={`${catalog.editing.kind}-${catalog.editing.mode}-${catalog.editing.mode === 'saved' ? catalog.editing.id : 'new'}`}
+          initial={catalog.editing}
+          recipes={catalog.recipes}
+          save={catalog.save}
+          close={catalog.closeEditor}
         />
       )}
-      {view && <CookingDetail meal={view} close={() => setView(null)} />}
+      {catalog.view && (
+        <CookingDetail meal={catalog.view} close={catalog.closeView} />
+      )}
     </>
   );
 }
