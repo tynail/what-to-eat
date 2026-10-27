@@ -1,13 +1,15 @@
-import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { Empty, ErrorBox, Header } from '../../shared/ui/page';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CookingDetail } from '../../shared/cooking/CookingDetail';
-import { CatalogEditor } from './CatalogEditor';
+import { Empty, ErrorBox, Header } from '../../shared/ui/page';
 import { CatalogCard } from './CatalogCard';
+import { CatalogEditor } from './CatalogEditor';
 import { useCatalog, type CatalogKind } from './useCatalog';
 
 /** Composes collection search, cards, and dialogs around collection commands. */
 export function Catalog({ kind }: { kind: CatalogKind }) {
+  const { t } = useTranslation();
   const catalog = useCatalog(kind);
   const [search, setSearch] = useState('');
   const recipeMode = kind === 'recipes';
@@ -15,50 +17,42 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
   return (
     <>
       <Header
-        eyebrow="THE HOUSEHOLD COLLECTION"
-        title={recipeMode ? 'Your recipe book' : 'Meals worth repeating'}
-        text={
-          recipeMode
-            ? 'The ingredients and little details that make it yours.'
-            : 'Bring recipes together into a meal you love.'
-        }
+        eyebrow={t('collection')}
+        title={recipeMode ? t('recipeBook') : t('repeatMeals')}
+        text={recipeMode ? t('recipeText') : t('mealText')}
       >
         <button
           className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
           onClick={catalog.create}
         >
           <Plus size={18} />
-          Add {recipeMode ? 'recipe' : 'meal'}
+          {recipeMode ? t('addRecipe') : t('addMeal')}
         </button>
       </Header>
       <div className="toolbar [&&]:flex [&&]:items-center [&&]:justify-between [&&]:gap-[15px] [&&]:mb-[23px] [@media(max-width:760px)]:[&&]:flex-wrap">
         <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px] search [&&]:w-[350px] [&&]:m-0 [@media(max-width:760px)]:[&&]:w-full">
-          Search {kind}
+          {recipeMode ? t('searchRecipes') : t('searchMeals')}
           <input
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
             type="search"
-            placeholder={`Find a favorite ${recipeMode ? 'recipe' : 'meal'}…`}
+            placeholder={recipeMode ? t('findRecipe') : t('findMeal')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
         <span className="muted [&&]:text-[#768076]">
-          {result.data?.length || 0} in your collection
+          {t('inCollection', { count: result.data?.length || 0 })}
         </span>
       </div>
       <ErrorBox error={catalog.error} />
       {result.isPending ? (
         <p className="m-[0_0_12px]" role="status">
-          Loading collection…
+          {t('loadingCollection')}
         </p>
       ) : !result.data?.length ? (
         <Empty
-          title={`Your ${recipeMode ? 'recipe book' : 'meal collection'} starts here`}
-          text={
-            recipeMode
-              ? 'Add your first recipe, then combine recipes into meals.'
-              : 'Add a meal and choose its recipes. It will be ready for your weekly shuffle.'
-          }
+          title={recipeMode ? t('recipeStart') : t('mealStart')}
+          text={recipeMode ? t('recipeStartText') : t('mealStartText')}
         />
       ) : (
         <div className="library-grid [&&]:grid [&&]:grid-cols-[repeat(2,_minmax(0,_1fr))] [&&]:gap-[20px] [@media(max-width:760px)]:[&&]:grid-cols-[1fr]">

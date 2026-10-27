@@ -1,3 +1,5 @@
+import i18n from '../../i18n';
+
 export class ApiError extends Error {
   /** Creates an API failure carrying the HTTP status and caller-facing message. */
   constructor(
@@ -29,10 +31,9 @@ async function readProblem(response: Response): Promise<string> {
     typeof body.detail === 'string'
   )
     return body.detail;
-  if (response.status === 401) return 'Please sign in.';
-  if (response.status === 429)
-    return 'Too many attempts. Wait a minute and retry.';
-  return 'Request failed. Reload and retry.';
+  if (response.status === 401) return i18n.t('apiUnauthorized');
+  if (response.status === 429) return i18n.t('apiRateLimit');
+  return i18n.t('apiFailed');
 }
 
 /**
@@ -53,10 +54,7 @@ async function requestCsrf(): Promise<string> {
           !('token' in body) ||
           typeof body.token !== 'string'
         )
-          throw new ApiError(
-            500,
-            'Security token unavailable. Reload and retry.',
-          );
+          throw new ApiError(500, i18n.t('apiSecurity'));
         csrf = body.token;
         return csrf;
       })
@@ -102,7 +100,7 @@ export async function apiParsed<T>(
   try {
     return parse(value);
   } catch {
-    throw new ApiError(502, 'Server returned an invalid response.');
+    throw new ApiError(502, i18n.t('apiInvalidResponse'));
   }
 }
 
@@ -144,7 +142,7 @@ async function request(
     const value: unknown = JSON.parse(text);
     return value;
   } catch {
-    throw new ApiError(502, 'Server returned invalid JSON.');
+    throw new ApiError(502, i18n.t('apiInvalidJson'));
   }
 }
 

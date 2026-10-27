@@ -12,6 +12,7 @@ import {
 import { useAction } from '../../shared/ui/action';
 import { beginDraft, type PlanDraft } from './draft';
 import { monday } from './dates';
+import i18n from '../../i18n';
 
 /** Server data stays in React Query; this hook owns only the current unsaved selection. */
 export function usePlanner() {
@@ -50,7 +51,7 @@ export function usePlanner() {
    * Accepted selections discard the draft even when the week string is unchanged.
    */
   function selectWeek(nextWeek: string) {
-    if (nextWeek && (!draft || confirm('Discard unsaved selection?'))) {
+    if (nextWeek && (!draft || confirm(i18n.t('confirmDiscard')))) {
       setWeek(nextWeek);
       discard();
     }
@@ -128,7 +129,7 @@ export function usePlanner() {
   function save() {
     if (
       draftState.kind !== 'draft' ||
-      (saved && !confirm('Replace this week’s saved plan?'))
+      (saved && !confirm(i18n.t('confirmReplace')))
     )
       return;
     return action.run(async () => {
@@ -146,7 +147,7 @@ export function usePlanner() {
    * Does nothing without a saved plan or confirmation; action failures populate `error`.
    */
   function deleteSaved() {
-    if (!saved || !confirm('Delete this saved week?')) return;
+    if (!saved || !confirm(i18n.t('confirmDeleteWeek'))) return;
     return action.run(async () => {
       await api(`/plans/${saved.id}?version=${saved.version}`, {
         method: 'DELETE',

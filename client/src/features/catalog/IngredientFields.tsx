@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import type { Ingredient, RecipeInput } from '../../api';
 import { blankIngredient, units } from './factories';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Edits ingredient rows and reports replacement recipes through `update`.
@@ -14,6 +15,7 @@ export function IngredientFields({
   recipe: RecipeInput;
   update: (recipe: RecipeInput) => void;
 }) {
+  const { t } = useTranslation();
   /** Patches the ingredient at a zero-based index; an unmatched index leaves all rows unchanged. */
   function updateIngredient(index: number, patch: Partial<Ingredient>) {
     update({
@@ -26,14 +28,14 @@ export function IngredientFields({
 
   return (
     <>
-      <h3 className="m-[0_0_12px] text-[17px]">Ingredients</h3>
+      <h3 className="m-[0_0_12px] text-[17px]">{t('ingredients')}</h3>
       {recipe.ingredients.map((ingredient, index) => (
         <div
           className="ingredient-row [&&]:grid [&&]:grid-cols-[2fr_0.8fr_1fr_1.6fr_auto] [&&]:gap-[8px] [&&]:items-center [&&_label]:text-[10px] [&&_button]:p-[7px] [@media(max-width:760px)]:[&&]:grid-cols-[2fr_1fr_1fr] [@media(max-width:760px)]:[&&_label:nth-child(4)]:[grid-column:1/3]"
           key={index}
         >
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-            Ingredient {index + 1}
+            {t('ingredient', { index: index + 1 })}
             <input
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               required
@@ -45,7 +47,7 @@ export function IngredientFields({
             />
           </label>
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-            Quantity
+            {t('quantity')}
             <input
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               type="number"
@@ -65,7 +67,7 @@ export function IngredientFields({
             />
           </label>
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-            Unit
+            {t('unit')}
             <select
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               value={ingredient.unit}
@@ -77,12 +79,14 @@ export function IngredientFields({
               }}
             >
               {units.map((unit) => (
-                <option key={unit}>{unit}</option>
+                <option key={unit} value={unit}>
+                  {t(`unit_${unit}`)}
+                </option>
               ))}
             </select>
           </label>
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-            Note
+            {t('note')}
             <input
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               maxLength={500}
@@ -95,7 +99,7 @@ export function IngredientFields({
           <button
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
             type="button"
-            aria-label={`Remove ingredient ${index + 1}`}
+            aria-label={t('removeIngredient', { index: index + 1 })}
             disabled={recipe.ingredients.length === 1}
             onClick={() =>
               update({
@@ -120,7 +124,7 @@ export function IngredientFields({
           })
         }
       >
-        <Plus size={16} /> Add ingredient
+        <Plus size={16} /> {t('addIngredient')}
       </button>
     </>
   );

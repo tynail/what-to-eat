@@ -1,27 +1,29 @@
 import { Leaf } from 'lucide-react';
 import './PlannerHero.css';
+import { useTranslation } from 'react-i18next';
 
 /** Renders the planner introduction with decorative plate artwork hidden from assistive technology. */
 export function PlannerHero() {
+  const { t } = useTranslation();
   return (
     <section className="planner-hero [&&]:bg-[#e9eedf] [&&]:[border:1px_solid_#dfe6d4] [&&]:rounded-[14px] [&&]:flex [&&]:justify-between [&&]:min-h-[278px] [&&]:p-[31px_36px] [&&]:overflow-hidden [&&]:mb-[26px] [&&_h2]:[font:36px/1.15_Georgia,_serif] [&&_h2]:tracking-[-0.7px] [&&_h2]:m-[17px_0_12px] [&&_p]:text-[#7e8774] [&&_p]:text-[12px] [@media(max-width:760px)]:[&&]:p-[25px] [@media(max-width:760px)]:[&&]:min-h-[248px] [@media(max-width:760px)]:[&&_h2]:text-[31px]">
       <div>
         <span className="pill [&&]:inline-flex [&&]:text-[10px] [&&]:[font-weight:650] [&&]:rounded-[20px] [&&]:bg-[#f4f6ed] [&&]:text-[#75845b] [&&]:p-[5px_11px] [&&]:tracking-[0.4px]">
-          YOUR WEEK, SORTED
+          {t('heroLabel')}
         </span>
         <h2 className="m-[0_0_12px] text-[21px] font-semibold leading-[1.3]">
-          Good meals.
+          {t('heroTitle').split('\n')[0]}
           <br />
-          Less mental load.
+          {t('heroTitle').split('\n')[1]}
         </h2>
         <p className="m-[0_0_12px]">
-          Pick how many meals you need.
+          {t('heroText').split('\n')[0]}
           <br />
-          We’ll take care of the choosing.
+          {t('heroText').split('\n')[1]}
         </p>
         <div className="hero-line [&&]:flex [&&]:items-center [&&]:gap-[7px] [&&]:text-[#788568] [&&]:text-[10px] [&&]:mt-[20px] [@media(max-width:760px)]:[&&]:text-[9px]">
           <Leaf size={18} />
-          Made from your own recipe collection
+          {t('heroCollection')}
         </div>
       </div>
       <div

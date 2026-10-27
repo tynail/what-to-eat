@@ -1,5 +1,6 @@
 import { Shuffle } from 'lucide-react';
 import type { Meal } from '../../api';
+import { useTranslation } from 'react-i18next';
 import { ErrorBox } from '../../shared/ui/page';
 
 /**
@@ -32,6 +33,7 @@ export function PlanGenerator({
   onExcludedChange: (ids: number[]) => void;
   onGenerate: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="panel [&&]:p-[26px] [&&]:[border:1px_solid_#e0e4d9] [&&]:bg-[#fff] [&&]:rounded-[12px] [&&]:mb-[24px] [@media(max-width:760px)]:[&&]:p-[20px] generator">
       <div className="section-title [&&]:flex [&&]:gap-[12px] [&&]:items-center [&&_h2]:text-[17px] [&&_h2]:mb-[3px] [&&_p]:text-[11px] [&&_p]:m-0">
@@ -40,16 +42,16 @@ export function PlanGenerator({
         </span>
         <div>
           <h2 className="m-[0_0_12px] text-[21px] font-semibold leading-[1.3]">
-            Let’s make a plan
+            {t('planTitle')}
           </h2>
           <p className="m-[0_0_12px] muted [&&]:text-[#768076]">
-            A fresh selection. No repeats within your week.
+            {t('planText')}
           </p>
         </div>
       </div>
       <div className="generate-controls [&&]:grid [&&]:grid-cols-[1.3fr_1fr_1.2fr] [&&]:items-end [&&]:gap-[17px] [&&]:mt-[23px] [&&_label]:m-0 [&&_button]:min-h-[43px] [@media(max-width:760px)]:[&&]:grid-cols-[1.3fr_1fr] [@media(max-width:760px)]:[&&]:gap-[13px] [@media(max-width:760px)]:[&&_button]:[grid-column:1/-1]">
         <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-          Week starting
+          {t('weekStarting')}
           <input
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
             type="date"
@@ -58,7 +60,7 @@ export function PlanGenerator({
           />
         </label>
         <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-          Number of meals
+          {t('numberMeals')}
           <input
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
             type="number"
@@ -74,14 +76,14 @@ export function PlanGenerator({
           onClick={onGenerate}
         >
           <Shuffle size={18} />
-          {busy ? 'Working…' : 'Pick my meals'}
+          {busy ? t('working') : t('pickMeals')}
         </button>
       </div>
       <details className="exclusions [&&]:[border-top:1px_solid_#edf0e6] [&&]:mt-[20px] [&&]:pt-[14px] [&&]:text-[11px]">
         <summary className="[&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] cursor-pointer">
-          Leave something out{' '}
+          {t('leaveOut')}{' '}
           <span className="muted [&&]:text-[#768076]">
-            ({excluded.length} excluded)
+            ({t('excluded', { count: excluded.length })})
           </span>
         </summary>
         <div className="checks [&&]:flex [&&]:flex-wrap [&&]:gap-[10px] [&&]:mt-[12px]">

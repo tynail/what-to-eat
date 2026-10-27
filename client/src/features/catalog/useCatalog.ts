@@ -13,6 +13,7 @@ import {
 import { useAction } from '../../shared/ui/action';
 import { blankMeal, blankRecipe } from './factories';
 import { editRecord, isRecipe, type EditorState } from './editorState';
+import i18n from '../../i18n';
 
 export type CatalogKind = 'recipes' | 'meals';
 
@@ -92,8 +93,7 @@ export function useCatalog(kind: CatalogKind) {
    * Cancellation does nothing; action failures are caught and exposed through `error`.
    */
   function remove(item: Recipe | Meal) {
-    if (!confirm(`Delete “${item.name}”? Saved weeks will keep their copy.`))
-      return;
+    if (!confirm(i18n.t('confirmDelete', { name: item.name }))) return;
     return action.run(async () => {
       await api(`/${kind}/${item.id}?version=${item.version}`, {
         method: 'DELETE',

@@ -9,10 +9,13 @@ export function monday(value = new Date()) {
 }
 
 /** Formats a YYYY-MM-DD date in English with a full month, day, and year, using local noon. */
-export function pretty(date: string) {
-  return new Date(`${date}T12:00:00`).toLocaleDateString('en', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+export function pretty(date: string, language = 'en') {
+  return new Date(`${date}T12:00:00`).toLocaleDateString(
+    language === 'fr' ? 'fr-CA' : 'en-CA',
+    {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    },
+  );
 }

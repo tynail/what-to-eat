@@ -2,6 +2,26 @@
 
 A responsive, invite-only meal planner for one household. React 19 + TypeScript, ASP.NET Core 10 Identity, EF Core, and SQLite. Meals combine recipes; weekly plans keep independent, versioned recipe snapshots for future grocery integrations.
 
+## Quick
+
+After completing [local setup](#run-locally), start the backend from the repository root:
+
+```powershell
+dotnet run --project server --launch-profile http
+```
+
+In another terminal, start the frontend from the repository root:
+
+```powershell
+npm run dev --prefix client
+```
+
+Open http://127.0.0.1:5173 and sign in with your existing account.
+
+The `http` launch profile sets `ASPNETCORE_ENVIRONMENT=Development` automatically. You do not need to set it manually for this command. Use Development mode only locally.
+
+`BOOTSTRAP_USERNAME`, `$secret`, and `BOOTSTRAP_PASSWORD` are needed only when creating the first admin. The account persists in the database, so you do not repeat bootstrap when restarting the app. `$secret` only holds the password temporarily during setup.
+
 ## Architecture
 
 The backend is a modular monolith. `Modules/Access` owns identity, members, and invitation/reset links. `Modules/Catalog` owns recipes and meals. `Modules/Planning` owns weekly-plan persistence and selection. `Program.cs` remains the HTTP/hosting composition root, and `AppDb` remains the persistence boundary. Modules use the shared scoped EF Core context for this single-process SQLite application, but planning consumes catalog snapshots rather than writing catalog state.

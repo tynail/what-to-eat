@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays } from 'lucide-react';
 import type { Plan } from '../../api';
 import { pretty } from './dates';
+import { useTranslation } from 'react-i18next';
 
 /** Renders saved plans in the supplied order; selecting one reports its week to `onSelect`. */
 export function PlanHistory({
@@ -10,10 +11,11 @@ export function PlanHistory({
   plans: Plan[];
   onSelect: (week: string) => void;
 }) {
+  const { t, i18n } = useTranslation();
   return (
     <section className="past-weeks [&&]:mt-[40px] [&&]:[border-top:1px_solid_#e4e8dc] [&&]:pt-[23px] [&&_h2]:[font:21px_Georgia,_serif]">
       <h2 className="m-[0_0_12px] text-[21px] font-semibold leading-[1.3]">
-        Previously at your table
+        {t('previous')}
       </h2>
       {plans?.length ? (
         <div className="history-list [&&]:grid [&&]:grid-cols-[1fr_1fr] [&&]:gap-[10px] [&&_button]:justify-start [&&_small]:ml-[auto] [&&_small]:text-[#879378] [@media(max-width:760px)]:[&&]:grid-cols-[1fr]">
@@ -24,15 +26,17 @@ export function PlanHistory({
               onClick={() => onSelect(p.week)}
             >
               <CalendarDays size={18} />
-              <span>{pretty(p.week)}</span>
-              <small className="text-[12px]">{p.meals.length} meals</small>
+              <span>{pretty(p.week, i18n.language)}</span>
+              <small className="text-[12px]">
+                {t('mealsCount', { count: p.meals.length })}
+              </small>
               <ArrowRight size={16} />
             </button>
           ))}
         </div>
       ) : (
         <p className="m-[0_0_12px] muted [&&]:text-[#768076]">
-          Saved weeks will find a home here.
+          {t('savedHome')}
         </p>
       )}
     </section>

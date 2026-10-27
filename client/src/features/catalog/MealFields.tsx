@@ -1,4 +1,5 @@
 import type { MealInput, Recipe } from '../../api';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Renders recipe selection and target servings, reporting replacement meal values
@@ -14,14 +15,15 @@ export function MealFields({
   recipes: Recipe[];
   update: (meal: MealInput) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
-      <h3 className="m-[0_0_12px] text-[17px]">Recipes in this meal</h3>
+      <h3 className="m-[0_0_12px] text-[17px]">{t('recipesMeal')}</h3>
       <p className="m-[0_0_12px] muted [&&]:text-[#768076]">
-        Choose recipes, then set how many servings to cook.
+        {t('recipesMealText')}
       </p>
       {recipes.length === 0 && (
-        <p className="m-[0_0_12px]">Add a recipe in your recipe book first.</p>
+        <p className="m-[0_0_12px]">{t('firstRecipe')}</p>
       )}
       {recipes.map((recipe) => {
         const selected = meal.recipes.find(
@@ -55,10 +57,10 @@ export function MealFields({
             </label>
             {selected && (
               <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
-                Target servings
+                {t('targetServings')}
                 <input
                   className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
-                  aria-label={`Servings for ${recipe.name}`}
+                  aria-label={t('servingsFor', { name: recipe.name })}
                   required
                   type="number"
                   min="0.01"

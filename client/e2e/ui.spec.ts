@@ -220,6 +220,27 @@ test('empty planner, generation error, and responsive navigation', async ({
   }
 });
 
+test('language picker translates live without leaving current page', async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.goto('/');
+  const picker = page.getByRole('button', { name: 'Language' });
+  await picker.click();
+  await page.getByRole('menuitemradio', { name: 'Français' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Qu’est-ce qu’on mange?' }),
+  ).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole('button', { name: 'Langue' }).click();
+  await page.getByRole('menuitemradio', { name: 'English' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'What’s on the table?' }),
+  ).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
+});
+
 test('catalog, recipe editor, cooking dialog, saved planner, and settings', async ({
   page,
 }, info) => {

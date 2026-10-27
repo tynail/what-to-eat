@@ -1,5 +1,6 @@
 import { Shuffle } from 'lucide-react';
 import type { Meal, Snapshot } from '../../api';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Renders selected meal snapshots with cooking, reroll, and replacement actions.
@@ -23,6 +24,7 @@ export function WeeklyLineup({
   onReroll: (index: number, meal: Snapshot) => void;
   onReplace: (index: number, id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="lineup [&&]:grid [&&]:gap-[10px]">
       {selection.map((m, i) => (
@@ -43,11 +45,11 @@ export function WeeklyLineup({
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
             onClick={() => onView(m)}
           >
-            Cook this
+            {t('cook')}
           </button>
           <button
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
-            aria-label={`Reroll ${m.name}`}
+            aria-label={t('reroll', { name: m.name })}
             disabled={busy}
             onClick={() => onReroll(i, m)}
           >
@@ -55,12 +57,12 @@ export function WeeklyLineup({
           </button>
           <select
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
-            aria-label={`Replace ${m.name}`}
+            aria-label={t('replace', { name: m.name })}
             value=""
             disabled={busy}
             onChange={(e) => onReplace(i, e.target.value)}
           >
-            <option value="">Replace…</option>
+            <option value="">{t('replacePrompt')}</option>
             {meals
               ?.filter(
                 (x) =>

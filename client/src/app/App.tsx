@@ -6,12 +6,14 @@ import { Settings } from '../features/settings/Settings';
 import { Login } from '../features/access/Login';
 import { Catalog } from '../features/catalog/Catalog';
 import { Planner } from '../features/planning/Planner';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Shows account redemption at `/join`; elsewhere waits for the current-user query
  * and renders sign-in when no user is available, or the household routes otherwise.
  */
 export function App() {
+  const { t } = useTranslation();
   const me = useQuery({
     queryKey: ['me'],
     queryFn: () => apiParsed('/auth/me', parseMe),
@@ -23,7 +25,7 @@ export function App() {
         className="m-[0_0_12px] loading [&&]:text-center [&&]:m-[20vh_auto]"
         role="status"
       >
-        Opening your kitchen…
+        {t('opening')}
       </p>
     );
   if (!me.data) return <Login />;
@@ -39,7 +41,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
         <footer className="text-[10px] text-[#9aa18f] text-center m-[48px_0_0]">
-          Made for your household. Shared around your table.
+          {t('footer')}
         </footer>
       </main>
     </div>

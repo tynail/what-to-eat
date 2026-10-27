@@ -10,6 +10,7 @@ import {
   type HouseholdUser,
 } from '../../api';
 import { useAction } from '../../shared/ui/action';
+import i18n from '../../i18n';
 
 /**
  * Loads household users only for admins and returns access-link and account actions.
@@ -41,7 +42,14 @@ export function useSettings(me: Me) {
 
   /** Confirms a member status change, then refreshes users; action failures populate `error`. */
   function toggle(user: HouseholdUser) {
-    if (!confirm(`${user.disabled ? 'Enable' : 'Disable'} ${user.username}?`))
+    if (
+      !confirm(
+        i18n.t('confirmToggle', {
+          action: user.disabled ? i18n.t('enable') : i18n.t('disable'),
+          name: user.username,
+        }),
+      )
+    )
       return;
     return action.run(async () => {
       await api(`/admin/users/${user.id}/toggle`, { method: 'POST' });
