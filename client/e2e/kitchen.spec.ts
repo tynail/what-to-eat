@@ -1,8 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { createApiState, mockApi } from './apiFixture';
+
 test('household invitation, cooking library, planner, history, and keyboard access', async ({
   page,
   browser,
 }, info) => {
+  const state = createApiState();
+  const session = { user: null };
+  await mockApi(page, state, session);
   const suffix = `${info.project.name}-${Date.now()}`;
   await page.goto('/');
   await page
@@ -22,6 +27,7 @@ test('household invitation, cooking library, planner, history, and keyboard acce
     .inputValue();
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
+  await mockApi(guest, state, { user: null });
   await guest.goto(link);
   await guest.getByLabel('Username').fill(`member-${suffix}`);
   await guest.getByLabel('Password', { exact: true }).fill('MemberOnly!Test42');

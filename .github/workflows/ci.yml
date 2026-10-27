@@ -20,19 +20,13 @@ jobs:
       - run: npm test --prefix client
       - run: npm run format:check
       - run: npm run build --prefix client
-      - run: mkdir -p server/wwwroot && cp -r client/dist/* server/wwwroot/
       - run: npx playwright install --with-deps chromium
         working-directory: client
-      - name: Start disposable browser fixture
-        env:
-          ASPNETCORE_ENVIRONMENT: Development
-          DataDirectory: ${{ runner.temp }}/kitchen-e2e
-          BOOTSTRAP_USERNAME: e2eadmin
-          BOOTSTRAP_PASSWORD: LocalOnly!Test42
+      - name: Start client browser fixture
         run: |
-          dotnet run --project server --no-build --no-launch-profile -- bootstrap-admin
-          dotnet run --project server --no-build --no-launch-profile --urls http://127.0.0.1:5080 > "$RUNNER_TEMP/kitchen.log" 2>&1 &
-          for i in $(seq 1 30); do curl --fail http://127.0.0.1:5080/health && break; sleep 1; done
+          npm exec vite preview -- --host 127.0.0.1 --port 5080 > "$RUNNER_TEMP/client-fixture.log" 2>&1 &
+          for i in $(seq 1 30); do curl --fail http://127.0.0.1:5080/ && break; sleep 1; done
+        working-directory: client
       - run: npm run test:e2e --prefix client
       - run: docker compose config --quiet
         env:
