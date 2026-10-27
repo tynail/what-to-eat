@@ -110,6 +110,31 @@ describe('API error localization', () => {
     },
   );
 
+  it.each([
+    { name: 'connection failure', cause: new TypeError('Failed to fetch') },
+    {
+      name: 'Firefox connection failure',
+      cause: new TypeError('NetworkError when attempting to fetch resource.'),
+    },
+    { name: 'non-Error failure', cause: undefined },
+  ])('updates an existing $name after a language change', async ({ cause }) => {
+    const fetch = vi.fn().mockRejectedValue(cause);
+    vi.stubGlobal('fetch', fetch);
+    render(<FailingAction request={() => api('/test')} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Request' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Request failed. Reload and retry.',
+    );
+
+    await act(async () => {
+      await i18n.changeLanguage('fr');
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La demande a échoué. Rechargez puis réessayez.',
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('retains interpolation parameters until rendering', async () => {
     const error = new ApiError(400, {
       key: 'ingredient',

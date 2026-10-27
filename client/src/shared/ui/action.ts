@@ -3,7 +3,7 @@ import { ApiError } from '../api/http';
 
 /**
  * Returns busy/error state and a runner that clears prior errors before each action.
- * The runner catches failures, keeping translated API errors or storing an Error message/generic fallback,
+ * The runner keeps translated API errors, translates connection/unknown failures, and preserves other Error messages,
  * and resets busy state when the action settles; caught failures do not reject its promise.
  */
 export function useAction() {
@@ -25,9 +25,11 @@ export function useAction() {
           setError(
             cause instanceof ApiError && cause.translationKey
               ? cause
-              : cause instanceof Error
-                ? cause.message
-                : 'Something went wrong.',
+              : cause instanceof TypeError
+                ? new ApiError(0, { key: 'apiFailed' })
+                : cause instanceof Error
+                  ? cause.message
+                  : new ApiError(0, { key: 'apiFailed' }),
           );
       } finally {
         setBusy(false);
