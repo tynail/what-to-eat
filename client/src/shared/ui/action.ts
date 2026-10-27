@@ -25,11 +25,9 @@ export function useAction() {
           setError(
             cause instanceof ApiError && cause.translationKey
               ? cause
-              : cause instanceof TypeError
-                ? new ApiError(0, { key: 'apiFailed' })
-                : cause instanceof Error
-                  ? cause.message
-                  : new ApiError(0, { key: 'apiFailed' }),
+              : cause instanceof Error
+                ? cause.message
+                : new ApiError(0, { key: 'apiFailed' }),
           );
       } finally {
         setBusy(false);

@@ -1,6 +1,19 @@
 type ApiErrorMessage =
   string | { key: string; params?: Record<string, unknown> };
 
+/** Converts fetch-level network failures into a message translated at render time. */
+async function fetchApi(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (cause) {
+    if (cause instanceof TypeError) throw new ApiError(0, { key: 'apiFailed' });
+    throw cause;
+  }
+}
+
 export class ApiError extends Error {
   readonly translationKey?: string;
   readonly translationParams?: Record<string, unknown>;
@@ -47,11 +60,12 @@ async function readProblem(response: Response): Promise<ApiErrorMessage> {
 /**
  * Fetches and caches a CSRF token, sharing an in-flight request with concurrent callers.
  * @throws {ApiError} For unsuccessful HTTP responses or a missing/non-string token.
- * Network, response-reading, and JSON parsing errors propagate unchanged.
+ * Network failures become translated `apiFailed` errors; response-reading and
+ * JSON parsing errors propagate unchanged.
  */
 async function requestCsrf(): Promise<string> {
   if (!csrfRequest) {
-    csrfRequest = fetch('/api/auth/csrf', { credentials: 'same-origin' })
+    csrfRequest = fetchApi('/api/auth/csrf', { credentials: 'same-origin' })
       .then(async (response) => {
         if (!response.ok)
           throw new ApiError(response.status, await readProblem(response));
@@ -80,8 +94,9 @@ async function requestCsrf(): Promise<string> {
  * @param path - API path including the leading slash, without the `/api` prefix.
  * @param options - Defaults to GET; mutation bodies are JSON-serialized when supplied.
  * @throws {ApiError} For unsuccessful HTTP responses, an invalid CSRF token response,
- * or invalid JSON in the requested response. Network, serialization, response-reading,
- * and CSRF JSON parsing errors propagate unchanged.
+ * or invalid JSON in the requested response. Network failures become translated
+ * `apiFailed` errors; serialization, response-reading, and CSRF JSON parsing errors
+ * propagate unchanged.
  */
 export async function api(
   path: string,
@@ -120,8 +135,9 @@ export async function apiParsed<T>(
  * @param path - Path appended to `/api`, including the leading slash.
  * @param options - Defaults to GET when no method is supplied; serializes a supplied body as JSON.
  * @throws {ApiError} For unsuccessful HTTP responses, an invalid CSRF token response,
- * or invalid JSON from the requested endpoint. Network, serialization, response-reading,
- * and CSRF JSON parsing errors propagate unchanged.
+ * or invalid JSON from the requested endpoint. Network failures become translated
+ * `apiFailed` errors; serialization, response-reading, and CSRF JSON parsing errors
+ * propagate unchanged.
  */
 async function request(
   path: string,
@@ -131,7 +147,7 @@ async function request(
   const body = 'body' in options ? options.body : undefined;
   const mutation = method !== 'GET' && method !== 'HEAD';
   const token = mutation ? csrf || (await requestCsrf()) : undefined;
-  const response = await fetch(`/api${path}`, {
+  const response = await fetchApi(`/api${path}`, {
     method,
     credentials: 'same-origin',
     headers: {

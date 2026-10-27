@@ -135,6 +135,20 @@ describe('API error localization', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('preserves non-network TypeError messages', async () => {
+    render(
+      <FailingAction
+        request={async () => {
+          throw new TypeError('Application type error');
+        }}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Request' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Application type error',
+    );
+  });
+
   it('retains interpolation parameters until rendering', async () => {
     const error = new ApiError(400, {
       key: 'ingredient',
