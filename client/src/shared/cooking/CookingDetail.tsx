@@ -41,7 +41,9 @@ export function CookingDetail({
                   : Number(ingredient.quantity.toFixed(3))}{' '}
                 {ingredient.unit === 'unspecified'
                   ? ''
-                  : t(`unit_${ingredient.unit}`)}{' '}
+                  : t(`unit_${ingredient.unit}`, {
+                      defaultValue: ingredient.unit,
+                    })}{' '}
                 <strong>{ingredient.name}</strong>
                 {ingredient.note && ` — ${ingredient.note}`}
               </li>
