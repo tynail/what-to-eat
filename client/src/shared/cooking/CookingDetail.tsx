@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import type { Snapshot } from '../api/types';
 import { Modal } from '../ui/Modal';
-import { useTranslation } from 'react-i18next';
 
 /**
  * Displays snapshot recipes in a dialog, rounding quantities to at most three
@@ -25,9 +25,6 @@ export function CookingDetail({
           key={index}
         >
           <p className="m-[0_0_12px] eyebrow [&&]:text-[#748166] [&&]:text-[10px] [&&]:tracking-[1.9px] [&&]:[font-weight:750] [&&]:mb-[12px]">
-            {new Intl.NumberFormat(
-              i18n.language === 'fr' ? 'fr-CA' : 'en-CA',
-            ).format(recipe.servings)}{' '}
             {t('servings', { count: recipe.servings }).toUpperCase()}
           </p>
           <h3 className="m-[0_0_12px] text-[17px]">{recipe.name}</h3>
