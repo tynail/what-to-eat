@@ -4,5 +4,8 @@
   "scripts": {
     "format": "npm run format --prefix client",
     "format:check": "npm run format:check --prefix client"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5"
   }
 }
