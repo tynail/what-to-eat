@@ -32,7 +32,7 @@ export function Sidebar({ me }: { me: Me }) {
       </p>
       <nav
         className="grid gap-[8px] [&_a]:flex [&_a]:items-center [&_a]:gap-[13px] [&_a]:p-[13px_14px] [&_a]:no-underline [&_a]:rounded-[8px] [&_a]:text-[#697666] [&_a]:text-[13px] [&_a_svg]:w-[18px] [&_a.active]:bg-[#dfe7d7] [&_a.active]:text-[#294c34] [&_a.active]:font-bold [@media(max-width:760px)]:flex [@media(max-width:760px)]:justify-between [@media(max-width:760px)]:gap-[3px] [@media(max-width:760px)]:mt-[17px] [@media(max-width:760px)]:[&_a]:p-[9px_8px] [@media(max-width:760px)]:[&_a]:text-[11px] [@media(max-width:760px)]:[&_a]:gap-[5px] [@media(max-width:760px)]:[&_a_svg]:w-[15px]"
-        aria-label={t('navLabel')}
+        aria-label={t('navigationLabel')}
       >
         <NavLink to="/" end>
           <CalendarDays />

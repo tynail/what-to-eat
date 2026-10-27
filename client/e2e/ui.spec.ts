@@ -125,6 +125,8 @@ test('sign-in layout, keyboard focus, and invalid invitation', async ({
     mobile ? 'block' : 'grid',
   );
   await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Language' })).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByLabel('Username')).toBeFocused();
   await expect(page.getByLabel('Username')).toHaveCSS(
     'outline-color',

@@ -18,11 +18,11 @@ function preferredLanguage(): Language {
   } catch {
     /* Storage can be unavailable. */
   }
-  return navigator.languages.some((language) =>
-    language.toLowerCase().startsWith('fr'),
-  )
-    ? 'fr'
-    : 'en';
+  for (const language of navigator.languages) {
+    const primary = language.toLowerCase().split('-')[0];
+    if (primary === 'en' || primary === 'fr') return primary;
+  }
+  return 'en';
 }
 
 i18n.use(initReactI18next).init({

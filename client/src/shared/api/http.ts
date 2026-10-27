@@ -1,13 +1,21 @@
-import i18n from '../../i18n';
+type ApiErrorMessage =
+  string | { key: string; params?: Record<string, unknown> };
 
 export class ApiError extends Error {
-  /** Creates an API failure carrying the HTTP status and caller-facing message. */
+  readonly translationKey?: string;
+  readonly translationParams?: Record<string, unknown>;
+
+  /** Keeps server details verbatim and translation keys/parameters for rendering. */
   constructor(
     readonly status: number,
-    message: string,
+    message: ApiErrorMessage,
   ) {
-    super(message);
+    super(typeof message === 'string' ? message : message.key);
     this.name = 'ApiError';
+    if (typeof message !== 'string') {
+      this.translationKey = message.key;
+      this.translationParams = message.params;
+    }
   }
 }
 
@@ -19,10 +27,10 @@ type ApiRequestOptions =
   | { method: 'POST' | 'PUT' | 'DELETE'; body?: unknown };
 
 /**
- * Returns a string problem detail when available, otherwise a status-specific fallback.
- * JSON parsing and body-reading rejections are caught and converted to fallback text.
+ * Returns a string problem detail when available, otherwise a status-specific translation key.
+ * JSON parsing and body-reading rejections are caught and converted to fallback keys.
  */
-async function readProblem(response: Response): Promise<string> {
+async function readProblem(response: Response): Promise<ApiErrorMessage> {
   const body: unknown = await response.json().catch(() => undefined);
   if (
     typeof body === 'object' &&
@@ -31,9 +39,9 @@ async function readProblem(response: Response): Promise<string> {
     typeof body.detail === 'string'
   )
     return body.detail;
-  if (response.status === 401) return i18n.t('apiUnauthorized');
-  if (response.status === 429) return i18n.t('apiRateLimit');
-  return i18n.t('apiFailed');
+  if (response.status === 401) return { key: 'apiUnauthorized' };
+  if (response.status === 429) return { key: 'apiRateLimit' };
+  return { key: 'apiFailed' };
 }
 
 /**
@@ -54,7 +62,7 @@ async function requestCsrf(): Promise<string> {
           !('token' in body) ||
           typeof body.token !== 'string'
         )
-          throw new ApiError(500, i18n.t('apiSecurity'));
+          throw new ApiError(500, { key: 'apiSecurity' });
         csrf = body.token;
         return csrf;
       })
@@ -100,7 +108,7 @@ export async function apiParsed<T>(
   try {
     return parse(value);
   } catch {
-    throw new ApiError(502, i18n.t('apiInvalidResponse'));
+    throw new ApiError(502, { key: 'apiInvalidResponse' });
   }
 }
 
@@ -142,7 +150,7 @@ async function request(
     const value: unknown = JSON.parse(text);
     return value;
   } catch {
-    throw new ApiError(502, i18n.t('apiInvalidJson'));
+    throw new ApiError(502, { key: 'apiInvalidJson' });
   }
 }
 

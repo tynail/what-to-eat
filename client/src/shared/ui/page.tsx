@@ -1,14 +1,21 @@
 import type { ReactNode } from 'react';
 import { Utensils } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ApiError } from '../api/http';
 
-/** Renders nothing for falsy errors; otherwise shows an alert with the Error message or string value. */
+/** Renders translated API failures in the current language, preserving other error messages. */
 export function ErrorBox({ error }: { error: unknown }) {
+  const { t } = useTranslation();
   return error ? (
     <p
       className="m-[0_0_12px] error [&&]:bg-[#fff0ea] [&&]:[border:1px_solid_#f0d0c4] [&&]:rounded-[8px] [&&]:p-[12px] [&&]:text-[#a23b2b] [&&]:text-[13px] [&&]:mt-[14px]"
       role="alert"
     >
-      {error instanceof Error ? error.message : String(error)}
+      {error instanceof ApiError && error.translationKey
+        ? t(error.translationKey, error.translationParams)
+        : error instanceof Error
+          ? error.message
+          : String(error)}
     </p>
   ) : null;
 }

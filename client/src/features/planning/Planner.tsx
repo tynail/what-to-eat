@@ -101,7 +101,7 @@ export function Planner() {
           disabled={planner.busy}
           onClick={() => void planner.deleteSaved()}
         >
-          {t('delete')} {t('saved').toLowerCase()}
+          {t('deleteSavedPlan')}
         </button>
       )}
       <PlanHistory plans={planner.plans} onSelect={planner.selectWeek} />
