@@ -15,7 +15,7 @@ export function LanguageSwitcher() {
       if (!ref.current?.contains(event.target as Node)) setOpen(false);
     }
     function escape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && ref.current?.querySelector('[role="menu"]')) {
         setOpen(false);
         trigger.current?.focus();
       }
