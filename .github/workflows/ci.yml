@@ -28,6 +28,13 @@ jobs:
           for i in $(seq 1 30); do curl --fail http://127.0.0.1:5080/ && break; sleep 1; done
         working-directory: client
       - run: npm run test:e2e --prefix client
+      - name: Report browser failure details
+        if: failure()
+        run: |
+          while IFS= read -r file; do
+            message=$(tr '\n' ' ' < "$file" | cut -c1-3000)
+            printf '::error file=%s,title=Playwright failure::%s\n' "$file" "$message"
+          done < <(find client/test-results -name error-context.md -type f -print)
       - run: docker compose config --quiet
         env:
           DOMAIN: meals.example.com
