@@ -46,7 +46,7 @@ function jsonError(status: number, detail: string) {
 }
 
 export function createApiState(): ApiState {
-  const admin: Me = { id: 'admin', username: 'Alex', isAdmin: true };
+  const admin: Me = { id: 'admin', username: 'e2eadmin', isAdmin: true };
   return {
     admin,
     guest: null,
