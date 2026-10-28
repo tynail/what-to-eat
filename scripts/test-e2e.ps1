@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 5.1
 <#
 .SYNOPSIS
 Builds and tests this checkout against a disposable backend and SQLite database.
@@ -6,6 +6,8 @@ Builds and tests this checkout against a disposable backend and SQLite database.
 pwsh -File scripts/test-e2e.ps1
 .EXAMPLE
 pwsh -File scripts/test-e2e.ps1 -SkipBuild -Port 5089 -TestFilter kitchen.spec.ts
+.EXAMPLE
+pwsh -File scripts/test-e2e.ps1 -Ui
 .NOTES
 Requires .NET 10, Node 24, and Playwright Chromium installed with
 `npx playwright install chromium` from client. Preserves logs under ignored .local.
@@ -13,7 +15,8 @@ Requires .NET 10, Node 24, and Playwright Chromium installed with
 param(
   [ValidateRange(1024, 65535)] [int] $Port = 5088,
   [string] $TestFilter = '',
-  [switch] $SkipBuild
+  [switch] $SkipBuild,
+  [switch] $Ui
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,16 +77,15 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Fixture admin bootstrap failed.' }
   Remove-Item Env:BOOTSTRAP_USERNAME, Env:BOOTSTRAP_PASSWORD
 
-  # ArgumentList handles spaces without shell quoting on both Windows and Linux.
+  # Quote paths so Windows PowerShell can start the server from directories with spaces.
   $startInfo = [Diagnostics.ProcessStartInfo]::new('dotnet')
   $startInfo.UseShellExecute = $false
   $startInfo.CreateNoWindow = $true
   $startInfo.RedirectStandardOutput = $true
   $startInfo.RedirectStandardError = $true
   $startInfo.WorkingDirectory = $repoRoot
-  foreach ($argument in @($serverDll, '--contentRoot', $contentRoot, '--webroot', $webRoot, '--urls', $env:E2E_URL)) {
-    $startInfo.ArgumentList.Add($argument)
-  }
+  $startInfo.Arguments = (@($serverDll, '--contentRoot', $contentRoot, '--webroot', $webRoot, '--urls', $env:E2E_URL) |
+    ForEach-Object { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' }) -join ' '
   $fixtureServer = [Diagnostics.Process]::Start($startInfo)
   $stdout = $fixtureServer.StandardOutput.ReadToEndAsync()
   $stderr = $fixtureServer.StandardError.ReadToEndAsync()
@@ -92,7 +94,7 @@ try {
   for ($attempt = 0; $attempt -lt 40; $attempt++) {
     if ($fixtureServer.HasExited) { throw 'Fixture backend exited before readiness.' }
     try {
-      Invoke-WebRequest "$env:E2E_URL/health" -TimeoutSec 2 | Out-Null
+      Invoke-WebRequest "$env:E2E_URL/health" -TimeoutSec 2 -UseBasicParsing | Out-Null
       $ready = $true
       break
     } catch { Start-Sleep -Milliseconds 250 }
@@ -101,19 +103,24 @@ try {
 
   $expectedIndex = Get-Content -Raw -LiteralPath (Join-Path $webRoot 'index.html')
   $bundlePath = [regex]::Match($expectedIndex, '/assets/[^" ]+\.js').Value
-  $servedIndex = (Invoke-WebRequest $env:E2E_URL).Content
+  $servedIndex = (Invoke-WebRequest $env:E2E_URL -UseBasicParsing).Content
   if (-not $bundlePath -or -not $servedIndex.Contains($bundlePath)) {
     throw "Wrong frontend served. Expected bundle $bundlePath."
   }
-  $bundleResponse = Invoke-WebRequest ($env:E2E_URL + $bundlePath)
-  $servedHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bundleResponse.RawContentStream.ToArray()))
+  $bundleResponse = Invoke-WebRequest ($env:E2E_URL + $bundlePath) -UseBasicParsing
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try { $servedHash = [BitConverter]::ToString($sha256.ComputeHash($bundleResponse.RawContentStream.ToArray())).Replace('-', '') }
+  finally { $sha256.Dispose() }
   $expectedHash = (Get-FileHash -LiteralPath (Join-Path $webRoot $bundlePath.TrimStart('/')) -Algorithm SHA256).Hash
   if ($servedHash -ne $expectedHash) { throw 'Served JavaScript differs from this checkout build.' }
   Write-Host "Verified frontend $bundlePath SHA256 $expectedHash"
 
   Push-Location $clientRoot
   try {
-    if ($TestFilter) { & npx playwright test $TestFilter } else { & npm run test:e2e }
+    $playwrightArgs = @('playwright', 'test')
+    if ($TestFilter) { $playwrightArgs += $TestFilter }
+    if ($Ui) { $playwrightArgs += '--ui' }
+    & npx @playwrightArgs
     if ($LASTEXITCODE -ne 0) { throw 'Browser tests failed.' }
   } finally { Pop-Location }
 } catch {
@@ -123,7 +130,7 @@ try {
   try {
     if ($fixtureServer) {
       try {
-        if (-not $fixtureServer.HasExited) { $fixtureServer.Kill($true) }
+        if (-not $fixtureServer.HasExited) { $fixtureServer.Kill() }
         $fixtureServer.WaitForExit()
         [IO.File]::WriteAllText((Join-Path $fixtureData 'server.log'), $stdout.GetAwaiter().GetResult())
         [IO.File]::WriteAllText((Join-Path $fixtureData 'server-error.log'), $stderr.GetAwaiter().GetResult())

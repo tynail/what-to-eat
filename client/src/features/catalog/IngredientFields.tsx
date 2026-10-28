@@ -32,6 +32,7 @@ export function IngredientFields({
       {recipe.ingredients.map((ingredient, index) => (
         <div
           className="ingredient-row [&&]:grid [&&]:grid-cols-[2fr_0.8fr_1fr_1.6fr_auto] [&&]:gap-[8px] [&&]:items-center [&&_label]:text-[10px] [&&_button]:p-[7px] [@media(max-width:760px)]:[&&]:grid-cols-[2fr_1fr_1fr] [@media(max-width:760px)]:[&&_label:nth-child(4)]:[grid-column:1/3]"
+          data-cy={`ingredient-row-${index}`}
           key={index}
         >
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
@@ -39,6 +40,7 @@ export function IngredientFields({
             <input
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               required
+              data-cy="ingredient-name"
               maxLength={120}
               value={ingredient.name}
               onChange={(event) =>
@@ -50,6 +52,7 @@ export function IngredientFields({
             {t('quantity')}
             <input
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
+              data-cy="ingredient-quantity"
               type="number"
               required={ingredient.unit !== 'unspecified'}
               min="0.0001"
@@ -69,6 +72,7 @@ export function IngredientFields({
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
             {t('unit')}
             <select
+              data-cy="ingredient-unit"
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
               value={ingredient.unit}
               onChange={(event) => {

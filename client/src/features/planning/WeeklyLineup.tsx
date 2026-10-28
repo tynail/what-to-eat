@@ -30,6 +30,7 @@ export function WeeklyLineup({
       {selection.map((m, i) => (
         <article
           className="meal-row [&&]:flex [&&]:items-center [&&]:gap-[13px] [&&]:bg-[#fff] [&&]:[border:1px_solid_#e1e6d9] [&&]:rounded-[10px] [&&]:p-[17px] [&&_button]:text-[11px] [&&_button]:p-[8px] [&&_select]:text-[11px] [&&_select]:p-[8px] [&&_select]:max-w-[120px] [@media(max-width:1100px)]:[&&]:flex-wrap [@media(max-width:760px)]:[&&]:gap-[9px] [@media(max-width:760px)]:[&&]:p-[13px] [@media(max-width:760px)]:[&&_select]:max-w-[150px]"
+          data-cy={`lineup-meal-${m.mealId}`}
           key={`${m.mealId}-${i}`}
         >
           <span className="meal-number [&&]:[font:21px_Georgia,_serif] [&&]:text-[#a2ad93] [&&]:bg-[#f3f5ed] [&&]:p-[12px] [&&]:rounded-[7px] [@media(max-width:760px)]:[&&]:p-[8px]">
@@ -43,6 +44,7 @@ export function WeeklyLineup({
           </div>
           <button
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
+            data-cy="lineup-cook"
             onClick={() => onView(m)}
           >
             {t('cook')}

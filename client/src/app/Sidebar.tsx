@@ -14,7 +14,10 @@ import { LanguageSwitcher } from '../shared/ui/LanguageSwitcher';
 export function Sidebar({ me }: { me: Me }) {
   const { t } = useTranslation();
   return (
-    <aside className="sticky [top:0] h-screen bg-[#f0f3e9] [border-right:1px_solid_#e0e5d9] p-[35px_24px] flex flex-col [@media(max-width:1100px)]:p-[28px_16px] [@media(max-width:760px)]:static [@media(max-width:760px)]:h-[auto] [@media(max-width:760px)]:p-[17px_20px] [@media(max-width:760px)]:[border-bottom:1px_solid_#dfe5d6]">
+    <aside
+      data-cy="sidebar"
+      className="sticky [top:0] h-screen bg-[#f0f3e9] [border-right:1px_solid_#e0e5d9] p-[35px_24px] flex flex-col [@media(max-width:1100px)]:p-[28px_16px] [@media(max-width:760px)]:static [@media(max-width:760px)]:h-[auto] [@media(max-width:760px)]:p-[17px_20px] [@media(max-width:760px)]:[border-bottom:1px_solid_#dfe5d6]"
+    >
       <a
         className="text-[inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] brand [&&]:flex [&&]:gap-[10px] [&&]:items-center [&&]:no-underline [&&]:[font-family:Georgia,_serif] [&&]:text-[21px] [&&]:whitespace-nowrap [&&_small]:block [&&_small]:[font:9px_system-ui] [&&_small]:text-[#808975] [&&_small]:mt-[4px] [@media(max-width:1100px)]:[&&]:text-[18px] [@media(max-width:1100px)]:[&&_small]:text-[8px] [@media(max-width:760px)]:[&&]:text-[21px] [@media(max-width:760px)]:[&&_small]:text-[9px]"
         href="/"
@@ -32,21 +35,22 @@ export function Sidebar({ me }: { me: Me }) {
       </p>
       <nav
         className="grid gap-[8px] [&_a]:flex [&_a]:items-center [&_a]:gap-[13px] [&_a]:p-[13px_14px] [&_a]:no-underline [&_a]:rounded-[8px] [&_a]:text-[#697666] [&_a]:text-[13px] [&_a_svg]:w-[18px] [&_a.active]:bg-[#dfe7d7] [&_a.active]:text-[#294c34] [&_a.active]:font-bold [@media(max-width:760px)]:flex [@media(max-width:760px)]:justify-between [@media(max-width:760px)]:gap-[3px] [@media(max-width:760px)]:mt-[17px] [@media(max-width:760px)]:[&_a]:p-[9px_8px] [@media(max-width:760px)]:[&_a]:text-[11px] [@media(max-width:760px)]:[&_a]:gap-[5px] [@media(max-width:760px)]:[&_a_svg]:w-[15px]"
+        data-cy="main-navigation"
         aria-label={t('navigationLabel')}
       >
-        <NavLink to="/" end>
+        <NavLink data-cy="nav-week" to="/" end>
           <CalendarDays />
           {t('week')}
         </NavLink>
-        <NavLink to="/meals">
+        <NavLink data-cy="nav-meals" to="/meals">
           <Utensils />
           {t('meals')}
         </NavLink>
-        <NavLink to="/recipes">
+        <NavLink data-cy="nav-recipes" to="/recipes">
           <BookOpen />
           {t('recipes')}
         </NavLink>
-        <NavLink to="/settings">
+        <NavLink data-cy="nav-settings" to="/settings">
           <SettingsIcon />
           {t('settings')}
         </NavLink>

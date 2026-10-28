@@ -23,6 +23,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
       >
         <button
           className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
+          data-cy="catalog-add"
           onClick={catalog.create}
         >
           <Plus size={18} />
@@ -55,7 +56,10 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
           text={recipeMode ? t('recipeStartText') : t('mealStartText')}
         />
       ) : (
-        <div className="library-grid [&&]:grid [&&]:grid-cols-[repeat(2,_minmax(0,_1fr))] [&&]:gap-[20px] [@media(max-width:760px)]:[&&]:grid-cols-[1fr]">
+        <div
+          data-cy="catalog-grid"
+          className="library-grid [&&]:grid [&&]:grid-cols-[repeat(2,_minmax(0,_1fr))] [&&]:gap-[20px] [@media(max-width:760px)]:[&&]:grid-cols-[1fr]"
+        >
           {result.data
             .filter((item) =>
               item.name.toLowerCase().includes(search.toLowerCase()),

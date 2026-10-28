@@ -9,6 +9,7 @@ export function ErrorBox({ error }: { error: unknown }) {
   return error ? (
     <p
       className="m-[0_0_12px] error [&&]:bg-[#fff0ea] [&&]:[border:1px_solid_#f0d0c4] [&&]:rounded-[8px] [&&]:p-[12px] [&&]:text-[#a23b2b] [&&]:text-[13px] [&&]:mt-[14px]"
+      data-cy="error-message"
       role="alert"
     >
       {error instanceof ApiError && error.translationKey
@@ -38,7 +39,10 @@ export function Header({
         <p className="m-[0_0_12px] eyebrow [&&]:text-[#748166] [&&]:text-[10px] [&&]:tracking-[1.9px] [&&]:[font-weight:750] [&&]:mb-[12px]">
           {eyebrow}
         </p>
-        <h1 className="m-[0_0_12px] [font-family:Georgia,_serif] text-[42px] leading-[1.15] font-medium tracking-[-1px] [@media(max-width:760px)]:text-[33px]">
+        <h1
+          data-cy="page-title"
+          className="m-[0_0_12px] [font-family:Georgia,_serif] text-[42px] leading-[1.15] font-medium tracking-[-1px] [@media(max-width:760px)]:text-[33px]"
+        >
           {title}
         </h1>
         <p className="m-[0_0_12px] muted [&&]:text-[#768076]">{text}</p>
@@ -53,7 +57,9 @@ export function Empty({ title, text }: { title: string; text: string }) {
   return (
     <div className="empty [&&]:p-[45px_20px] [&&]:text-center [&&]:[border:1px_dashed_#d9e0cf] [&&]:rounded-[12px] [&&]:text-[#859079] [&&_svg]:text-[#a2b18f] [&&_svg]:mb-[12px] [&&_h3]:[font:21px_Georgia,_serif] [&&_h3]:text-[#596b4b] [&&_p]:text-[12px] [&&_p]:max-w-[460px] [&&_p]:m-[auto]">
       <Utensils size={32} />
-      <h3 className="m-[0_0_12px] text-[17px]">{title}</h3>
+      <h3 data-cy="empty-state-title" className="m-[0_0_12px] text-[17px]">
+        {title}
+      </h3>
       <p className="m-[0_0_12px]">{text}</p>
     </div>
   );

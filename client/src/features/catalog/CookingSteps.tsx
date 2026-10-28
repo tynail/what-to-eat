@@ -20,6 +20,7 @@ export function CookingSteps({
       {recipe.steps.map((step, index) => (
         <div
           className="step-row [&&]:flex [&&]:items-center [&&]:gap-[9px] [&&_label]:flex-1"
+          data-cy={`step-row-${index}`}
           key={index}
         >
           <label className="grid gap-[6px] text-[12px] font-semibold text-[#56664f] mb-[14px]">
@@ -27,6 +28,7 @@ export function CookingSteps({
             <textarea
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0 min-h-[75px] resize-y"
               required
+              data-cy="step-text"
               maxLength={4000}
               value={step}
               onChange={(event) =>

@@ -38,6 +38,7 @@ export function LanguageSwitcher() {
   return (
     <div className="relative" ref={ref}>
       <button
+        data-cy="language-trigger"
         ref={trigger}
         type="button"
         className="[font-family:inherit] inline-flex items-center gap-[6px] text-[12px] font-semibold text-[#294737] bg-white [border:1px_solid_#d8dfd6] rounded-[8px] p-[8px_10px] cursor-pointer [&:focus-visible]:[outline:3px_solid_#bc8c32]"
@@ -57,6 +58,7 @@ export function LanguageSwitcher() {
         >
           {(['en', 'fr'] as const).map((option) => (
             <button
+              data-cy={`language-option-${option}`}
               key={option}
               type="button"
               role="menuitemradio"

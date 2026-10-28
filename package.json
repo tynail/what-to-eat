@@ -2,6 +2,7 @@
   "name": "what-to-eat",
   "private": true,
   "scripts": {
+    "test:e2e:ui": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-e2e.ps1 -Ui",
     "format": "npm run format --prefix client",
     "format:check": "npm run format:check --prefix client"
   },

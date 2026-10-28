@@ -53,7 +53,10 @@ export function Planner() {
             </span>
           </h2>
         </div>
-        <span className="pill [&&]:inline-flex [&&]:text-[10px] [&&]:[font-weight:650] [&&]:rounded-[20px] [&&]:bg-[#f4f6ed] [&&]:text-[#75845b] [&&]:p-[5px_11px] [&&]:tracking-[0.4px]">
+        <span
+          data-cy="planner-status"
+          className="pill [&&]:inline-flex [&&]:text-[10px] [&&]:[font-weight:650] [&&]:rounded-[20px] [&&]:bg-[#f4f6ed] [&&]:text-[#75845b] [&&]:p-[5px_11px] [&&]:tracking-[0.4px]"
+        >
           {planner.draft
             ? t('unsaved')
             : planner.saved
@@ -81,6 +84,7 @@ export function Planner() {
         <div className="save-bar [&&]:flex [&&]:items-center [&&]:gap-[12px] [&&]:m-[22px_0] [&&]:flex-wrap [&&_p]:flex-1 [&&_p]:text-[12px] [&&_p]:text-[#78876b] [&&_p]:m-0 [@media(max-width:760px)]:[&&_p]:[flex-basis:100%]">
           <p className="m-[0_0_12px]">{t('keepWeek')}</p>
           <button
+            data-cy="save-week"
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
             disabled={planner.busy}
             onClick={() => void planner.save()}

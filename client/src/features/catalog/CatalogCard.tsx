@@ -17,7 +17,10 @@ export function CatalogCard({
 }) {
   const { t } = useTranslation();
   return (
-    <article className="library-card [&&]:bg-[white] [&&]:[border:1px_solid_#e0e6d7] [&&]:rounded-[12px] [&&]:p-[23px] [&&]:flex [&&]:flex-col [&&_h2]:[font:24px_Georgia,_serif] [&&_h2]:[overflow-wrap:anywhere] [&&_p]:text-[12px] [&&_p]:flex-1">
+    <article
+      data-cy={`${isRecipe(item) ? 'recipe' : 'meal'}-card-${item.id}`}
+      className="library-card [&&]:bg-[white] [&&]:[border:1px_solid_#e0e6d7] [&&]:rounded-[12px] [&&]:p-[23px] [&&]:flex [&&]:flex-col [&&_h2]:[font:24px_Georgia,_serif] [&&_h2]:[overflow-wrap:anywhere] [&&_p]:text-[12px] [&&_p]:flex-1"
+    >
       <div className="card-top [&&]:flex [&&]:justify-between [&&]:items-center [&&]:mb-[20px]">
         <span className="food-icon [&&]:bg-[#ecf0e3] [&&]:text-[#7b9061] [&&]:p-[13px] [&&]:rounded-[12px] [&&]:flex">
           {isRecipe(item) ? <BookOpen /> : <Utensils />}
@@ -28,7 +31,10 @@ export function CatalogCard({
             : t('recipesCount', { count: item.recipes.length })}
         </span>
       </div>
-      <h2 className="m-[0_0_12px] text-[21px] font-semibold leading-[1.3]">
+      <h2
+        data-cy="card-title"
+        className="m-[0_0_12px] text-[21px] font-semibold leading-[1.3]"
+      >
         {item.name}
       </h2>
       <p className="m-[0_0_12px] muted [&&]:text-[#768076]">
@@ -46,12 +52,14 @@ export function CatalogCard({
         </button>
         <button
           className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
+          data-cy="card-edit"
           onClick={() => onEdit(item)}
         >
           {t('edit')}
         </button>
         <button
           className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] danger [&&]:text-[#a64e3f] text-button [&&]:[background:none] [&&]:border-0 [&&]:pl-[0]"
+          data-cy="card-delete"
           onClick={() => onDelete(item)}
         >
           {t('delete')}

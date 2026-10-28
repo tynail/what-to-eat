@@ -116,49 +116,54 @@ test('sign-in layout, keyboard focus, and invalid invitation', async ({
 }, info) => {
   await fixture(page, { signedIn: false });
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { name: 'Welcome back.' }),
-  ).toBeVisible();
+  await expect(page.getByTestId('auth-heading')).toHaveRole('heading');
+  await expect(page.getByTestId('auth-submit')).toHaveAccessibleName('Sign in');
+  await expect(page.getByTestId('auth-username')).toHaveAccessibleName(
+    'Username',
+  );
+  await expect(page.getByTestId('language-trigger')).toHaveAccessibleName(
+    'Language',
+  );
+  await expect(page.getByTestId('auth-heading')).toBeVisible();
+  await expect(page.getByTestId('auth-heading')).toHaveText('Welcome back.');
   const mobile = info.project.name === 'mobile';
-  await expect(page.locator('form').locator('..')).toHaveCSS(
+  await expect(page.getByTestId('auth-page')).toHaveCSS(
     'display',
     mobile ? 'block' : 'grid',
   );
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Language' })).toBeFocused();
+  await expect(page.getByTestId('language-trigger')).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Username')).toBeFocused();
-  await expect(page.getByLabel('Username')).toHaveCSS(
+  await expect(page.getByTestId('auth-username')).toBeFocused();
+  await expect(page.getByTestId('auth-username')).toHaveCSS(
     'outline-color',
     'rgb(188, 140, 50)',
   );
-  await expect(page.getByLabel('Username')).toHaveCSS('outline-width', '3px');
-  await expect(
-    page.getByRole('button', { name: 'Sign in', exact: true }),
-  ).toHaveCSS('background-color', 'rgb(41, 84, 63)');
-  await expect(
-    page.getByRole('button', { name: 'Sign in', exact: true }),
-  ).toHaveCSS('font-weight', '600');
+  await expect(page.getByTestId('auth-username')).toHaveCSS(
+    'outline-width',
+    '3px',
+  );
+  await expect(page.getByTestId('auth-submit')).toHaveCSS(
+    'background-color',
+    'rgb(41, 84, 63)',
+  );
+  await expect(page.getByTestId('auth-submit')).toHaveCSS('font-weight', '600');
   await capture(page, info, 'login');
   await page.goto('/join#invalid');
-  await expect(
-    page.getByText(
-      'This link is invalid. Ask your household admin for a new one.',
-    ),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Save account' }),
-  ).toBeDisabled();
+  await expect(page.getByTestId('auth-hint')).toBeVisible();
+  await expect(page.getByTestId('auth-hint')).toHaveText(
+    'This link is invalid. Ask your household admin for a new one.',
+  );
+  await expect(page.getByTestId('auth-submit')).toBeDisabled();
   await capture(page, info, 'invalid-invite');
   await page.goto('about:blank');
   await page.goto(`/join#invite:${'A'.repeat(64)}`);
-  await page.getByLabel('Username').fill('New member');
-  await page.getByLabel('Password', { exact: true }).fill('MemberOnly!Test42');
-  await page.getByRole('button', { name: 'Save account' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'You’re all set.' }),
-  ).toBeVisible();
-  const signIn = page.getByRole('link', { name: 'Sign in', exact: true });
+  await page.getByTestId('auth-username').fill('New member');
+  await page.getByTestId('auth-password').fill('MemberOnly!Test42');
+  await page.getByTestId('auth-submit').click();
+  await expect(page.getByTestId('auth-heading')).toBeVisible();
+  await expect(page.getByTestId('auth-heading')).toHaveText('You’re all set.');
+  const signIn = page.getByTestId('auth-sign-in-link');
   await expect(signIn).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(signIn).toHaveCSS('background-color', 'rgb(41, 84, 63)');
   await capture(page, info, 'completed-invite');
@@ -173,26 +178,35 @@ test('empty planner, generation error, and responsive navigation', async ({
 }, info) => {
   await fixture(page);
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { name: 'What’s on the table?' }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('heading', {
-      name: 'A delicious week starts with a little shuffle',
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('navigation', { name: 'Main navigation' }),
-  ).toHaveCSS('display', info.project.name === 'mobile' ? 'flex' : 'grid');
-  await expect(
-    page.getByRole('button', { name: 'Pick my meals' }),
-  ).toBeEnabled();
+  await expect(page.getByTestId('page-title')).toBeVisible();
+  await expect(page.getByTestId('page-title')).toHaveText(
+    'What’s on the table?',
+  );
+  await expect(page.getByTestId('empty-state-title')).toBeVisible();
+  await expect(page.getByTestId('empty-state-title')).toHaveRole('heading');
+  await expect(page.getByTestId('empty-state-title')).toHaveText(
+    'A delicious week starts with a little shuffle',
+  );
+  await expect(page.getByTestId('main-navigation')).toHaveRole('navigation');
+  await expect(page.getByTestId('main-navigation')).toHaveAccessibleName(
+    'Main navigation',
+  );
+  await expect(page.getByTestId('main-navigation')).toHaveCSS(
+    'display',
+    info.project.name === 'mobile' ? 'flex' : 'grid',
+  );
+  await expect(page.getByTestId('planner-generate')).toBeEnabled();
+  await expect(page.getByTestId('planner-generate')).toHaveRole('button');
+  await expect(page.getByTestId('planner-generate')).toHaveAccessibleName(
+    'Pick my meals',
+  );
   await capture(page, info, 'empty-planner');
-  await page.getByRole('button', { name: 'Pick my meals' }).click();
-  await expect(page.getByRole('alert')).toHaveText(
+  await page.getByTestId('planner-generate').click();
+  await expect(page.getByTestId('error-message')).toHaveRole('alert');
+  await expect(page.getByTestId('error-message')).toHaveText(
     'No meals available. Add a meal before generating a plan.',
   );
-  await expect(page.getByRole('alert')).toHaveCSS(
+  await expect(page.getByTestId('error-message')).toHaveCSS(
     'background-color',
     'rgb(255, 240, 234)',
   );
@@ -201,15 +215,16 @@ test('empty planner, generation error, and responsive navigation', async ({
     // Original CSS uses inclusive max-width breakpoints. Check both sides exactly.
     for (const width of [760, 761, 1100, 1101]) {
       await page.setViewportSize({ width, height: 900 });
-      await expect(
-        page.getByRole('navigation', { name: 'Main navigation' }),
-      ).toHaveCSS('display', width <= 760 ? 'flex' : 'grid');
-      await expect(page.locator('aside')).toHaveCSS(
+      await expect(page.getByTestId('main-navigation')).toHaveCSS(
+        'display',
+        width <= 760 ? 'flex' : 'grid',
+      );
+      await expect(page.getByTestId('sidebar')).toHaveCSS(
         'position',
         width <= 760 ? 'static' : 'sticky',
       );
       if (width > 760)
-        await expect(page.locator('aside')).toHaveCSS(
+        await expect(page.getByTestId('sidebar')).toHaveCSS(
           'width',
           width <= 1100 ? '210px' : '254px',
         );
@@ -227,19 +242,34 @@ test('language picker translates live without leaving current page', async ({
 }) => {
   await fixture(page);
   await page.goto('/');
-  const picker = page.getByRole('button', { name: 'Language' });
+  await expect(page.getByTestId('page-title')).toHaveRole('heading');
+  const picker = page.getByTestId('language-trigger');
   await picker.click();
-  await page.getByRole('menuitemradio', { name: 'Français' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Qu’est-ce qu’on mange?' }),
-  ).toBeVisible();
+  await expect(page.getByTestId('language-option-fr')).toHaveRole(
+    'menuitemradio',
+  );
+  await expect(page.getByTestId('language-option-fr')).toHaveAccessibleName(
+    'Français',
+  );
+  await page.getByTestId('language-option-fr').click();
+  await expect(page.getByTestId('page-title')).toBeVisible();
+  await expect(page.getByTestId('page-title')).toHaveText(
+    'Qu’est-ce qu’on mange?',
+  );
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
   await expect(page).toHaveURL(/\/$/);
-  await page.getByRole('button', { name: 'Langue' }).click();
-  await page.getByRole('menuitemradio', { name: 'English' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'What’s on the table?' }),
-  ).toBeVisible();
+  await page.getByTestId('language-trigger').click();
+  await expect(page.getByTestId('language-option-en')).toHaveRole(
+    'menuitemradio',
+  );
+  await expect(page.getByTestId('language-option-en')).toHaveAccessibleName(
+    'English',
+  );
+  await page.getByTestId('language-option-en').click();
+  await expect(page.getByTestId('page-title')).toBeVisible();
+  await expect(page.getByTestId('page-title')).toHaveText(
+    'What’s on the table?',
+  );
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
 });
 
@@ -248,11 +278,16 @@ test('catalog, recipe editor, cooking dialog, saved planner, and settings', asyn
 }, info) => {
   await fixture(page, { populated: true });
   await page.goto('/');
-  await expect(page.getByText('Saved plan', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toHaveText('Saved plan');
   await capture(page, info, 'saved-planner');
-  await page.getByRole('button', { name: 'Cook this' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  const dialogBox = await page.getByRole('dialog').boundingBox();
+  await page
+    .getByTestId(`lineup-meal-${meal.id}`)
+    .getByTestId('lineup-cook')
+    .click();
+  await expect(page.getByTestId('modal')).toBeVisible();
+  await expect(page.getByTestId('modal')).toHaveRole('dialog');
+  const dialogBox = await page.getByTestId('modal').boundingBox();
   expect(dialogBox).not.toBeNull();
   if (dialogBox) {
     expect(dialogBox.x).toBeGreaterThanOrEqual(0);
@@ -262,36 +297,42 @@ test('catalog, recipe editor, cooking dialog, saved planner, and settings', asyn
   }
   await capture(page, info, 'cooking-dialog');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Recipes', exact: true }).click();
+  await expect(page.getByTestId('modal')).toHaveCount(0);
+  await page.getByTestId('nav-recipes').click();
   await expect(
-    page.getByRole('heading', { name: 'Lemon pasta', exact: true }),
+    page.getByTestId(`recipe-card-${recipe.id}`).getByTestId('card-title'),
   ).toBeVisible();
+  await expect(
+    page.getByTestId(`recipe-card-${recipe.id}`).getByTestId('card-title'),
+  ).toHaveRole('heading');
+  await expect(
+    page.getByTestId(`recipe-card-${recipe.id}`).getByTestId('card-title'),
+  ).toHaveText('Lemon pasta');
   expect(
     await page
-      .locator('article')
-      .locator('..')
+      .getByTestId('catalog-grid')
       .evaluate(
         (element) =>
           getComputedStyle(element).gridTemplateColumns.split(' ').length,
       ),
   ).toBe(info.project.name === 'mobile' ? 1 : 2);
   await capture(page, info, 'recipes');
-  await page.getByRole('button', { name: 'Add recipe', exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByTestId('catalog-add').click();
+  await expect(page.getByTestId('modal')).toBeVisible();
+  await expect(page.getByTestId('modal')).toHaveRole('dialog');
   await capture(page, info, 'recipe-editor');
-  await page.getByRole('button', { name: 'Close dialog' }).click();
-  await page.getByRole('link', { name: 'Meals', exact: true }).click();
+  await page.getByTestId('modal-close').click();
+  await page.getByTestId('nav-meals').click();
   await expect(
-    page.getByRole('heading', { name: 'Pasta night', exact: true }),
+    page.getByTestId(`meal-card-${meal.id}`).getByTestId('card-title'),
   ).toBeVisible();
+  await expect(
+    page.getByTestId(`meal-card-${meal.id}`).getByTestId('card-title'),
+  ).toHaveText('Pasta night');
   await capture(page, info, 'meals');
-  await page.getByRole('link', { name: 'Settings', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Household settings' }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Reset password' }),
-  ).toHaveCount(2);
+  await page.getByTestId('nav-settings').click();
+  await expect(page.getByTestId('page-title')).toBeVisible();
+  await expect(page.getByTestId('page-title')).toHaveText('Household settings');
+  await expect(page.getByTestId('household-reset-password')).toHaveCount(2);
   await capture(page, info, 'settings');
 });
