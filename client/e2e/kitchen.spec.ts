@@ -1,90 +1,117 @@
 import { test, expect } from '@playwright/test';
+import { createApiState, mockApi } from './apiFixture';
+
 test('household invitation, cooking library, planner, history, and keyboard access', async ({
   page,
   browser,
 }, info) => {
+  const state = createApiState();
+  const session = { user: null };
+  const recipeId = state.nextRecipeId;
+  const mealId = state.nextMealId;
+  await mockApi(page, state, session);
   const suffix = `${info.project.name}-${Date.now()}`;
   await page.goto('/');
   await page
-    .getByLabel('Username')
+    .getByTestId('auth-username')
     .fill(process.env.E2E_USERNAME || 'e2eadmin');
   await page
-    .getByLabel('Password', { exact: true })
+    .getByTestId('auth-password')
     .fill(process.env.E2E_PASSWORD || 'LocalOnly!Test42');
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'What’s on the table?' }),
-  ).toBeVisible();
-  await page.getByRole('link', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Create invite link' }).click();
-  const link = await page
-    .getByLabel('Copy this private link and share it directly')
-    .inputValue();
+  await page.getByTestId('auth-submit').click();
+  await expect(page.getByTestId('page-title')).toBeVisible();
+  await expect(page.getByTestId('page-title')).toHaveRole('heading');
+  await expect(page.getByTestId('page-title')).toHaveText(
+    'What’s on the table?',
+  );
+  await page.getByTestId('nav-settings').click();
+  await page.getByTestId('household-invite').click();
+  const link = await page.getByTestId('household-share-link').inputValue();
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
+  await mockApi(guest, state, { user: null });
   await guest.goto(link);
-  await guest.getByLabel('Username').fill(`member-${suffix}`);
-  await guest.getByLabel('Password', { exact: true }).fill('MemberOnly!Test42');
-  await guest.getByRole('button', { name: 'Save account' }).click();
-  await expect(
-    guest.getByRole('heading', { name: 'You’re all set.' }),
-  ).toBeVisible();
-  await guest.getByRole('link', { name: 'Sign in' }).click();
-  await guest.getByLabel('Username').fill(`member-${suffix}`);
-  await guest.getByLabel('Password', { exact: true }).fill('MemberOnly!Test42');
-  await guest.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(
-    guest.getByRole('heading', { name: 'What’s on the table?' }),
-  ).toBeVisible();
+  await guest.getByTestId('auth-username').fill(`member-${suffix}`);
+  await guest.getByTestId('auth-password').fill('MemberOnly!Test42');
+  await guest.getByTestId('auth-submit').click();
+  await expect(guest.getByTestId('auth-heading')).toBeVisible();
+  await expect(guest.getByTestId('auth-heading')).toHaveRole('heading');
+  await expect(guest.getByTestId('auth-heading')).toHaveText('You’re all set.');
+  await guest.getByTestId('auth-sign-in-link').click();
+  await guest.getByTestId('auth-username').fill(`member-${suffix}`);
+  await guest.getByTestId('auth-password').fill('MemberOnly!Test42');
+  await guest.getByTestId('auth-submit').click();
+  await expect(guest.getByTestId('page-title')).toBeVisible();
+  await expect(guest.getByTestId('page-title')).toHaveText(
+    'What’s on the table?',
+  );
   await guestContext.close();
-  await page.getByRole('link', { name: 'Recipes', exact: true }).click();
-  await page.getByRole('button', { name: 'Add recipe', exact: true }).click();
-  await page.getByLabel('Name', { exact: true }).fill(`Lemon pasta ${suffix}`);
+  await page.getByTestId('nav-recipes').click();
+  await page.getByTestId('catalog-add').click();
+  await page.getByTestId('editor-name').fill(`Lemon pasta ${suffix}`);
   await page
-    .getByRole('textbox', { name: 'Description', exact: true })
+    .getByTestId('editor-description')
     .fill('Bright, easy, weeknight pasta.');
-  await page.getByLabel('Ingredient 1', { exact: true }).fill('Pasta');
-  await page.getByLabel('Quantity', { exact: true }).fill('200');
   await page
-    .getByRole('combobox', { name: 'Unit', exact: true })
+    .getByTestId('ingredient-row-0')
+    .getByTestId('ingredient-name')
+    .fill('Pasta');
+  await page
+    .getByTestId('ingredient-row-0')
+    .getByTestId('ingredient-quantity')
+    .fill('200');
+  await page
+    .getByTestId('ingredient-row-0')
+    .getByTestId('ingredient-unit')
     .selectOption('g');
   await page
-    .getByLabel('Step 1', { exact: true })
+    .getByTestId('step-row-0')
+    .getByTestId('step-text')
     .fill('Boil pasta, then toss with lemon.');
-  await page.getByRole('button', { name: 'Save recipe', exact: true }).click();
-  const recipeCard = page.locator('article').filter({
-    has: page.getByRole('heading', {
-      name: `Lemon pasta ${suffix}`,
-      exact: true,
-    }),
-  });
+  await page.getByTestId('editor-save').click();
+  const recipeCard = page.getByTestId(`recipe-card-${recipeId}`);
+  await expect(recipeCard.getByTestId('card-title')).toHaveText(
+    `Lemon pasta ${suffix}`,
+  );
   await expect(recipeCard).toBeVisible();
-  await recipeCard.getByRole('button', { name: 'Edit', exact: true }).click();
+  await recipeCard.getByTestId('card-edit').click();
   await page
-    .getByRole('textbox', { name: 'Description', exact: true })
+    .getByTestId('editor-description')
     .fill('A fresh household favorite.');
-  await page.getByRole('button', { name: 'Save recipe', exact: true }).click();
-  await page.getByRole('link', { name: 'Meals', exact: true }).click();
-  await page.getByRole('button', { name: 'Add meal', exact: true }).click();
-  await page.getByLabel('Name', { exact: true }).fill(`Pasta night ${suffix}`);
-  await page.getByLabel(`Lemon pasta ${suffix}`, { exact: true }).check();
-  await page.getByLabel(`Servings for Lemon pasta ${suffix}`).fill('4');
-  await page.getByRole('button', { name: 'Save meal', exact: true }).click();
-  await page.getByRole('link', { name: 'This Week', exact: true }).click();
-  await page.getByLabel('Number of meals').fill('1');
-  await page.getByRole('button', { name: 'Pick my meals' }).click();
-  await expect(
-    page.getByText('Unsaved preview', { exact: true }),
-  ).toBeVisible();
+  await page.getByTestId('editor-save').click();
+  await page.getByTestId('nav-meals').click();
+  await page.getByTestId('catalog-add').click();
+  await page.getByTestId('editor-name').fill(`Pasta night ${suffix}`);
+  await page
+    .getByTestId(`meal-choice-${recipeId}`)
+    .getByTestId('meal-recipe-selected')
+    .check();
+  await page
+    .getByTestId(`meal-choice-${recipeId}`)
+    .getByTestId('meal-recipe-servings')
+    .fill('4');
+  await page.getByTestId('editor-save').click();
+  await page.getByTestId('nav-week').click();
+  await page.getByTestId('planner-count').fill('1');
+  await page.getByTestId('planner-generate').click();
+  await expect(page.getByTestId('planner-status')).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toHaveText(
+    'Unsaved preview',
+  );
   page.on('dialog', (dialog) => dialog.accept());
-  await page.getByRole('button', { name: 'Save week', exact: true }).click();
-  await expect(page.getByText('Saved plan', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Cook this' }).first().click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByTestId('save-week').click();
+  await expect(page.getByTestId('planner-status')).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toHaveText('Saved plan');
+  await page
+    .getByTestId(`lineup-meal-${mealId}`)
+    .getByTestId('lineup-cook')
+    .click();
+  await expect(page.getByTestId('modal')).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByTestId('modal')).not.toBeVisible();
   await page.reload();
-  await expect(page.getByText('Saved plan', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toHaveText('Saved plan');
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -94,18 +121,17 @@ test('household invitation, cooking library, planner, history, and keyboard acce
     path: `test-results/${info.project.name}-planner.png`,
     fullPage: true,
   });
-  await page.getByRole('link', { name: 'Meals', exact: true }).click();
-  const mealCard = page.locator('article').filter({
-    has: page.getByRole('heading', {
-      name: `Pasta night ${suffix}`,
-      exact: true,
-    }),
-  });
-  await mealCard.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByTestId('nav-meals').click();
+  const mealCard = page.getByTestId(`meal-card-${mealId}`);
+  await expect(mealCard.getByTestId('card-title')).toHaveText(
+    `Pasta night ${suffix}`,
+  );
+  await mealCard.getByTestId('card-delete').click();
   await expect(mealCard).toHaveCount(0);
-  await page.getByRole('link', { name: 'Recipes', exact: true }).click();
-  await recipeCard.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByTestId('nav-recipes').click();
+  await recipeCard.getByTestId('card-delete').click();
   await expect(recipeCard).toHaveCount(0);
-  await page.getByRole('link', { name: 'This Week', exact: true }).click();
-  await expect(page.getByText('Saved plan', { exact: true })).toBeVisible();
+  await page.getByTestId('nav-week').click();
+  await expect(page.getByTestId('planner-status')).toBeVisible();
+  await expect(page.getByTestId('planner-status')).toHaveText('Saved plan');
 });

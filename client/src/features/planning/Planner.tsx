@@ -9,17 +9,19 @@ import { PlannerHero } from './PlannerHero';
 import { PlanGenerator } from './PlanGenerator';
 import { WeeklyLineup } from './WeeklyLineup';
 import { PlanHistory } from './PlanHistory';
+import { useTranslation } from 'react-i18next';
 
 /** Composes planner sections; requests and unsaved-selection transitions live in usePlanner. */
 export function Planner() {
+  const { t, i18n } = useTranslation();
   const planner = usePlanner();
   const [view, setView] = useState<Snapshot | null>(null);
   return (
     <>
       <Header
-        eyebrow="A FRESH WEEK, A LITTLE LESS GUESSWORK"
-        title="What’s on the table?"
-        text="Your favorites, a little shuffle, and dinner is decided."
+        eyebrow={t('plannerEyebrow')}
+        title={t('plannerTitle')}
+        text={t('plannerText')}
       />
       <PlannerHero />
       <PlanGenerator
@@ -40,31 +42,32 @@ export function Planner() {
       <div className="section-heading [&&]:flex [&&]:justify-between [&&]:items-center [&&]:m-[34px_0_18px] [&&_.eyebrow]:text-[9px] [&&_.eyebrow]:mb-[6px] [&&_h2]:[font:25px_Georgia,_serif] [&&_h2]:m-0 [@media(max-width:760px)]:[&&_h2]:text-[23px] [@media(max-width:760px)]:[&&_>_.pill]:text-[9px]">
         <div>
           <p className="m-[0_0_12px] eyebrow [&&]:text-[#748166] [&&]:text-[10px] [&&]:tracking-[1.9px] [&&]:[font-weight:750] [&&]:mb-[12px]">
-            WEEK OF {pretty(planner.week).toUpperCase()}
+            {t('weekOf', {
+              date: pretty(planner.week, i18n.language).toUpperCase(),
+            })}
           </p>
           <h2 className="m-[0_0_12px] text-[21px] font-semibold leading-[1.3]">
-            Your weekly lineup{' '}
+            {t('lineup')}{' '}
             <span className="count [&&]:[font:11px_system-ui] [&&]:bg-[#edf1e6] [&&]:p-[4px_8px] [&&]:rounded-[50%] [&&]:[vertical-align:middle] [&&]:ml-[8px]">
               {planner.selection.length}
             </span>
           </h2>
         </div>
-        <span className="pill [&&]:inline-flex [&&]:text-[10px] [&&]:[font-weight:650] [&&]:rounded-[20px] [&&]:bg-[#f4f6ed] [&&]:text-[#75845b] [&&]:p-[5px_11px] [&&]:tracking-[0.4px]">
+        <span
+          data-cy="planner-status"
+          className="pill [&&]:inline-flex [&&]:text-[10px] [&&]:[font-weight:650] [&&]:rounded-[20px] [&&]:bg-[#f4f6ed] [&&]:text-[#75845b] [&&]:p-[5px_11px] [&&]:tracking-[0.4px]"
+        >
           {planner.draft
-            ? 'Unsaved preview'
+            ? t('unsaved')
             : planner.saved
-              ? 'Saved plan'
-              : 'Ready when you are'}
+              ? t('saved')
+              : t('ready')}
         </span>
       </div>
       {!planner.selection.length ? (
         <Empty
-          title="A delicious week starts with a little shuffle"
-          text={
-            planner.meals.length
-              ? 'Choose your meal count above, then hit Pick my meals.'
-              : 'First, add recipes and build a few meals in your collection.'
-          }
+          title={t('emptyWeek')}
+          text={planner.meals.length ? t('emptyWeekMeals') : t('emptyWeekNone')}
         />
       ) : (
         <WeeklyLineup
@@ -79,21 +82,20 @@ export function Planner() {
       )}
       {planner.draft && (
         <div className="save-bar [&&]:flex [&&]:items-center [&&]:gap-[12px] [&&]:m-[22px_0] [&&]:flex-wrap [&&_p]:flex-1 [&&_p]:text-[12px] [&&_p]:text-[#78876b] [&&_p]:m-0 [@media(max-width:760px)]:[&&_p]:[flex-basis:100%]">
-          <p className="m-[0_0_12px]">
-            Looking good? Keep this week’s recipes exactly as they are.
-          </p>
+          <p className="m-[0_0_12px]">{t('keepWeek')}</p>
           <button
+            data-cy="save-week"
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] primary [&&]:bg-[#29543f] [&&]:text-[white] [&&]:[border-color:#29543f] [&&:hover]:bg-[#193e2c]"
             disabled={planner.busy}
             onClick={() => void planner.save()}
           >
-            Save week <ArrowRight size={16} />
+            {t('saveWeek')} <ArrowRight size={16} />
           </button>
           <button
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
             onClick={planner.discard}
           >
-            Discard preview
+            {t('discard')}
           </button>
         </div>
       )}
@@ -103,7 +105,7 @@ export function Planner() {
           disabled={planner.busy}
           onClick={() => void planner.deleteSaved()}
         >
-          Delete saved week
+          {t('deleteSavedPlan')}
         </button>
       )}
       <PlanHistory plans={planner.plans} onSelect={planner.selectWeek} />

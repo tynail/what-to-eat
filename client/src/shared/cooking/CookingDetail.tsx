@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Snapshot } from '../api/types';
 import { Modal } from '../ui/Modal';
 
@@ -12,6 +13,7 @@ export function CookingDetail({
   meal: Snapshot;
   close: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   return (
     <Modal title={meal.name} close={close}>
       <p className="m-[0_0_12px] muted [&&]:text-[#768076]">
@@ -23,24 +25,28 @@ export function CookingDetail({
           key={index}
         >
           <p className="m-[0_0_12px] eyebrow [&&]:text-[#748166] [&&]:text-[10px] [&&]:tracking-[1.9px] [&&]:[font-weight:750] [&&]:mb-[12px]">
-            {recipe.servings} SERVINGS
+            {t('servings', { count: recipe.servings }).toUpperCase()}
           </p>
           <h3 className="m-[0_0_12px] text-[17px]">{recipe.name}</h3>
           <p className="m-[0_0_12px]">{recipe.description}</p>
-          <h4 className="m-[0_0_12px]">Ingredients</h4>
+          <h4 className="m-[0_0_12px]">{t('ingredients')}</h4>
           <ul>
             {recipe.ingredients.map((ingredient, ingredientIndex) => (
               <li key={ingredientIndex}>
                 {ingredient.quantity == null
                   ? ''
                   : Number(ingredient.quantity.toFixed(3))}{' '}
-                {ingredient.unit === 'unspecified' ? '' : ingredient.unit}{' '}
+                {ingredient.unit === 'unspecified'
+                  ? ''
+                  : t(`unit_${ingredient.unit}`, {
+                      defaultValue: ingredient.unit,
+                    })}{' '}
                 <strong>{ingredient.name}</strong>
                 {ingredient.note && ` — ${ingredient.note}`}
               </li>
             ))}
           </ul>
-          <h4 className="m-[0_0_12px]">How to make it</h4>
+          <h4 className="m-[0_0_12px]">{t('howMake')}</h4>
           <ol>
             {recipe.steps.map((step, stepIndex) => (
               <li key={stepIndex}>{step}</li>

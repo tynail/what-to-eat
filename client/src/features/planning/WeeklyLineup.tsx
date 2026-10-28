@@ -1,5 +1,6 @@
 import { Shuffle } from 'lucide-react';
 import type { Meal, Snapshot } from '../../api';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Renders selected meal snapshots with cooking, reroll, and replacement actions.
@@ -23,11 +24,13 @@ export function WeeklyLineup({
   onReroll: (index: number, meal: Snapshot) => void;
   onReplace: (index: number, id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="lineup [&&]:grid [&&]:gap-[10px]">
       {selection.map((m, i) => (
         <article
           className="meal-row [&&]:flex [&&]:items-center [&&]:gap-[13px] [&&]:bg-[#fff] [&&]:[border:1px_solid_#e1e6d9] [&&]:rounded-[10px] [&&]:p-[17px] [&&_button]:text-[11px] [&&_button]:p-[8px] [&&_select]:text-[11px] [&&_select]:p-[8px] [&&_select]:max-w-[120px] [@media(max-width:1100px)]:[&&]:flex-wrap [@media(max-width:760px)]:[&&]:gap-[9px] [@media(max-width:760px)]:[&&]:p-[13px] [@media(max-width:760px)]:[&&_select]:max-w-[150px]"
+          data-cy={`lineup-meal-${m.mealId}`}
           key={`${m.mealId}-${i}`}
         >
           <span className="meal-number [&&]:[font:21px_Georgia,_serif] [&&]:text-[#a2ad93] [&&]:bg-[#f3f5ed] [&&]:p-[12px] [&&]:rounded-[7px] [@media(max-width:760px)]:[&&]:p-[8px]">
@@ -41,13 +44,14 @@ export function WeeklyLineup({
           </div>
           <button
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
+            data-cy="lineup-cook"
             onClick={() => onView(m)}
           >
-            Cook this
+            {t('cook')}
           </button>
           <button
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
-            aria-label={`Reroll ${m.name}`}
+            aria-label={t('reroll', { name: m.name })}
             disabled={busy}
             onClick={() => onReroll(i, m)}
           >
@@ -55,12 +59,12 @@ export function WeeklyLineup({
           </button>
           <select
             className="[font-family:inherit] [font-size:inherit] [line-height:inherit] [font-weight:inherit] [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px] w-full [border:1px_solid_#dce1d5] rounded-[6px] bg-[#fff] p-[10px] text-[#334932] min-w-0"
-            aria-label={`Replace ${m.name}`}
+            aria-label={t('replace', { name: m.name })}
             value=""
             disabled={busy}
             onChange={(e) => onReplace(i, e.target.value)}
           >
-            <option value="">Replace…</option>
+            <option value="">{t('replacePrompt')}</option>
             {meals
               ?.filter(
                 (x) =>
