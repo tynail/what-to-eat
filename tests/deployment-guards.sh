@@ -20,10 +20,16 @@ for command in "deploy $image $revision; id" "deploy $image $revision extra" "de
     exit 1
   fi
 done
-if bash "$root/deploy/pi/deploy.sh" 'invalid' "$revision" >/dev/null 2>&1; then
-  echo 'Invalid image was accepted.' >&2
-  exit 1
-fi
+assert_usage_error() {
+  local status=0
+  bash "$root/deploy/pi/deploy.sh" "$@" >/dev/null 2>&1 || status=$?
+  [[ $status == 2 ]] || { echo "Expected status 2, got $status for arguments: $*" >&2; exit 1; }
+}
+assert_usage_error invalid "$revision"
+assert_usage_error "$image" invalid
+assert_usage_error
+assert_usage_error "$image"
+assert_usage_error "$image" "$revision" extra
 mkdir -p "$tmp/deployment"
 sed -e "s|/opt/weekly-table|$tmp/deployment|g" -e "s|/run/lock/weekly-table-deploy.lock|$tmp/deploy.lock|g" "$root/deploy/pi/deploy.sh" > "$tmp/deploy.sh"
 cat > "$tmp/flock" <<'EOF'
