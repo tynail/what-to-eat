@@ -1,0 +1,57 @@
+name: weekly-table-prod
+services:
+  app:
+    image: ${APP_IMAGE:?Set APP_IMAGE in image.env}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTPS_PORT: 443
+      AllowedHosts: ${DOMAIN:?Set DOMAIN in settings.env}
+      ProxyAddress: 172.30.43.4
+    volumes:
+      - kitchen-data:/data
+    networks:
+      kitchen:
+        ipv4_address: 172.30.43.3
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      kitchen:
+        ipv4_address: 172.30.43.4
+    security_opt: [no-new-privileges:true]
+    depends_on: [app]
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.7
+    restart: unless-stopped
+    command:
+      [tunnel, --no-autoupdate, run, --token-file, /run/secrets/tunnel_token]
+    secrets: [tunnel_token]
+    networks:
+      kitchen:
+        ipv4_address: 172.30.43.2
+    security_opt: [no-new-privileges:true]
+    depends_on: [proxy]
+  backup:
+    image: python:3.13-alpine
+    profiles: [tools]
+    user: '1654:1654'
+    volumes:
+      - kitchen-data:/data
+      - ./backups:/backups
+      - ./backup.py:/backup.py:ro
+    entrypoint: [python, /backup.py]
+secrets:
+  tunnel_token:
+    file: ./secrets/tunnel_token
+volumes:
+  kitchen-data:
+networks:
+  kitchen:
+    ipam:
+      config:
+        - subnet: 172.30.43.0/24

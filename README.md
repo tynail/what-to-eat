@@ -70,6 +70,10 @@ If Windows sandboxing blocks the inherited NuGet user configuration, set `APPDAT
 
 Weeks start Monday using a date-only value. Maximum 50 distinct meals per week. Recipes allow 100 ingredients and 100 steps; meals allow 30 distinct recipes. Serving counts must be positive, at most 1000. Ingredients accept count, g/kg, oz/lb, ml/l, tsp/tbsp/cup, or unspecified. Quantities are decimals; display rounds to three decimals while snapshots retain precision. No automatic unit conversion or nutritional/dietary interpretation occurs.
 
+## Deploy to Raspberry Pi
+
+For an isolated production environment using Cloudflare Tunnel, Tailscale, and a manually triggered GitHub release, see [Raspberry Pi production setup](deploy/PI_SETUP.md). Development continues to use the local commands above.
+
 ## Deploy on a private server
 
 Requires Docker Compose, a domain pointing to the server, inbound ports 80/443, and persistent local disk. SQLite is intended for one application instance; do not scale replicas or place the DB on a network filesystem.
