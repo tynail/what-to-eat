@@ -1,0 +1,8 @@
+[Unit]
+Description=Back up Weekly Table production data
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/weekly-table/nightly-backup.sh

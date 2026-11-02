@@ -9,3 +9,6 @@
 **/test-results
 .env
 backups
+deploy/pi/secrets
+deploy/pi/backups
+deploy/pi/*.env

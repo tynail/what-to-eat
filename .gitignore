@@ -11,3 +11,8 @@
 .env
 backups/
 *.db*
+/deploy/pi/secrets/
+/deploy/pi/backups/
+/deploy/pi/*.env
+/deploy/pi/rollback-backup
+/deploy/pi/last-successful-release
