@@ -45,6 +45,24 @@ public class ApiTests
 {
     static RecipeInput Recipe(string name = "Soup", Guid? version = null) => new(name, "Warm dinner", 2, ["Simmer gently"], [new("Water", 500, "ml", "")], version);
     [Fact]
+    public async Task AccountAllowsNineMistakesThenTemporarilyLocks()
+    {
+        using var f = new KitchenFactory(); using var client = f.CreateClient();
+        using var scope = f.Services.CreateScope(); var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var user = new User { UserName = "lockout-test" };
+        Assert.True((await users.CreateAsync(user, "Testing!Password42")).Succeeded);
+        await KitchenFactory.Csrf(client);
+        for (var i = 0; i < 9; i++)
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { username = user.UserName, password = "wrong" })).StatusCode);
+        Assert.False(await users.IsLockedOutAsync(user));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { username = user.UserName, password = "wrong" })).StatusCode);
+        var reloaded = (await users.FindByIdAsync(user.Id))!;
+        Assert.True(await users.IsLockedOutAsync(reloaded));
+        var remaining = (await users.GetLockoutEndDateAsync(reloaded))!.Value - DateTimeOffset.UtcNow;
+        Assert.InRange(remaining, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { username = user.UserName, password = "Testing!Password42" })).StatusCode);
+    }
+    [Fact]
     public async Task AuthenticationCsrfAndRolesAreRequired()
     {
         using var f = new KitchenFactory(); using var anonymous = f.CreateClient(); Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/recipes")).StatusCode);

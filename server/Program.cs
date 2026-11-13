@@ -15,7 +15,7 @@ if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(data, UnixFileMode.UserRe
 builder.Services.AddDbContext<AppDb>(o => o.UseSqlite($"Data Source={Path.Combine(data, "meals.db")};Foreign Keys=True;Default Timeout=5"));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(data, "keys"))).SetApplicationName("MealPlanner");
-builder.Services.AddIdentity<User, IdentityRole>(o => { o.Password.RequiredLength = 12; o.Lockout.MaxFailedAccessAttempts = 5; o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); }).AddEntityFrameworkStores<AppDb>().AddDefaultTokenProviders();
+builder.Services.AddIdentity<User, IdentityRole>(o => { o.Password.RequiredLength = 12; o.Lockout.MaxFailedAccessAttempts = 10; o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5); }).AddEntityFrameworkStores<AppDb>().AddDefaultTokenProviders();
 builder.Services.ConfigureApplicationCookie(o =>
 {
     o.Cookie.Name = "MealPlanner.Session"; o.Cookie.HttpOnly = true; o.Cookie.SameSite = SameSiteMode.Strict;
