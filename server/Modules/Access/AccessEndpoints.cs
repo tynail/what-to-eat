@@ -43,7 +43,7 @@ public static class AccessEndpoints
         admin.MapPost("/invites", async (AppDb db, TimeProvider clock) => await Issue(db, clock, "invite", null));
         admin.MapPost("/users/{id}/reset", async (string id, AppDb db, TimeProvider clock) =>
             await db.Users.AnyAsync(user => user.Id == id && user.HouseholdId == 1 && !user.Disabled) ? await Issue(db, clock, "reset", id) : Results.NotFound());
-        admin.MapPost("/users/{id}/toggle", Toggle);
+        admin.MapPut("/users/{id}/access", SetAccess);
     }
 
     static async Task<IResult> Redeem(RedeemInput input, AppDb db, UserManager<User> users, TimeProvider clock)
@@ -81,15 +81,19 @@ public static class AccessEndpoints
         return Results.Ok();
     }
 
-    static async Task<IResult> Toggle(string id, ClaimsPrincipal principal, UserManager<User> users)
+    static async Task<IResult> SetAccess(string id, AccountAccessInput input, ClaimsPrincipal principal, UserManager<User> users, AppDb db)
     {
         if (id == users.GetUserId(principal)) return Results.Problem(statusCode: 400, detail: "Cannot disable your own account.");
+        if (input.Disabled is null) throw new ArgumentException("Disabled state required.");
+        await using var transaction = await db.Database.BeginTransactionAsync();
         var user = await users.FindByIdAsync(id);
         if (user is null || user.HouseholdId != 1) return Results.NotFound();
         if (await users.IsInRoleAsync(user, "Admin")) return Results.Problem(statusCode: 400, detail: "Admin accounts cannot be disabled here.");
-        user.Disabled = !user.Disabled;
-        Check(await users.UpdateAsync(user));
+        if (user.Disabled == input.Disabled.Value) return Results.NoContent();
+        user.Disabled = input.Disabled.Value;
+        // Identity persists the new stamp and the account state in one versioned update.
         Check(await users.UpdateSecurityStampAsync(user));
+        await transaction.CommitAsync();
         return Results.NoContent();
     }
 

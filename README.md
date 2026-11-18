@@ -197,6 +197,10 @@ The migration started with passing UI tests and same-host screenshots before cha
 
 Authenticated OpenAPI document: `/openapi/v1.json`. REST routes are under `/api`: `auth`, `admin`, `recipes`, `meals`, `planner/generate`, `planner/reroll`, and `plans`. Mutation clients must first fetch `/api/auth/csrf`, retain its cookie, and send the returned token as `X-CSRF-TOKEN`. Refresh the token after login/logout. Sessions use HttpOnly SameSite cookies, not browser-storage tokens.
 
+Admin clients set member access with `PUT /api/admin/users/{id}/access` and a JSON body such as `{"disabled":true}`. Repeating the request keeps the same access state.
+
+The planner stores generated previews in SQLite for seven days after their most recent generation. A save sends ordered `references` with each meal ID and preview key. Rows retained from the saved week need only their meal ID and the plan's matching version. Expired previews return HTTP 409 so the user can generate a fresh preview. Saved weeks retain their own snapshots indefinitely. `GET /api/plans` returns up to 20 week summaries with meal counts. Pass the returned `nextBefore` date as `?before=` for older weeks. Fetch full snapshots with `GET /api/plans/{week}`.
+
 Updates/deletes require the last-read GUID `version`; conflicts return HTTP 409 with reload guidance. Creating a saved week sends a null version; overwriting sends the existing version. Recipe deletion returns referencing meal names until those links are removed. Snapshots have schema version 1 and deliberately remain independent from current recipe IDs. The saved-plan API accepts validated snapshot content, enabling household edits without requiring still-existing library records; all signed-in members can edit shared plans.
 
 No public registration, external HTML, uploads, arbitrary URLs, grocery credentials, or external synchronization. Future grocery adapters should consume structured snapshot ingredients through an explicit integration boundary. Security controls reduce risk but do not replace deployment patching, protected backups, and periodic review.

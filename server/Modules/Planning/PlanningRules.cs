@@ -7,9 +7,9 @@ public static class Planning
         var ids = candidates.Distinct().ToList();
         if (count < 1 || count > 50) throw new ArgumentException("Choose between 1 and 50 meals.");
         if (ids.Count < count) throw new ArgumentException($"Only {ids.Count} eligible meals available; requested {count}.");
-        for (var index = ids.Count - 1; index > 0; index--)
+        for (var index = 0; index < count; index++)
         {
-            var random = System.Security.Cryptography.RandomNumberGenerator.GetInt32(index + 1);
+            var random = System.Security.Cryptography.RandomNumberGenerator.GetInt32(index, ids.Count);
             (ids[index], ids[random]) = (ids[random], ids[index]);
         }
         return ids.Take(count).ToList();

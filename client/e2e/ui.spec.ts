@@ -48,15 +48,29 @@ async function fixture(
       '/api/auth/redeem': {},
       '/api/recipes': populated ? [recipe] : [],
       '/api/meals': populated ? [meal] : [],
-      '/api/plans': populated
-        ? [{ id: 1, week: '2026-10-19', version: 'plan-v1', meals: [snapshot] }]
-        : [],
+      '/api/plans': {
+        items: populated ? [{ week: '2026-10-19', mealCount: 1 }] : [],
+        nextBefore: null,
+      },
+      '/api/plans/2026-10-19': {
+        id: 1,
+        week: '2026-10-19',
+        version: 'plan-v1',
+        meals: [snapshot],
+      },
       '/api/admin/users': [
         { id: 'admin', username: 'Alex', disabled: false },
         { id: 'member', username: 'Sam', disabled: false },
       ],
       '/api/meals/1/snapshot': snapshot,
     };
+    if (
+      pathname.startsWith('/api/plans/') &&
+      (!populated || !(pathname in responses))
+    ) {
+      await route.fulfill({ status: 404, json: {} });
+      return;
+    }
     if (pathname in responses) {
       await route.fulfill({ json: responses[pathname] });
       return;

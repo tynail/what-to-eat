@@ -21,6 +21,7 @@ export const meal: Meal = {
 };
 export const snapshot: Snapshot = {
   mealId: meal.id,
+  previewKey: 'test-preview',
   name: meal.name,
   description: '',
   recipes: [

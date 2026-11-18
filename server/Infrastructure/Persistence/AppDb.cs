@@ -8,12 +8,15 @@ public class AppDb(DbContextOptions<AppDb> options) : IdentityDbContext<User>(op
     public DbSet<Household> Households => Set<Household>();
     public DbSet<Recipe> Recipes => Set<Recipe>();
     public DbSet<Meal> Meals => Set<Meal>();
+    public DbSet<MealPreview> MealPreviews => Set<MealPreview>();
     public DbSet<WeeklyPlan> Plans => Set<WeeklyPlan>();
     public DbSet<AccessToken> AccessTokens => Set<AccessToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<MealPreview>().HasKey(preview => preview.Key);
+        builder.Entity<MealPreview>().HasIndex(preview => preview.ExpiresAt);
         builder.Entity<User>().HasOne<Household>().WithMany().HasForeignKey(user => user.HouseholdId).OnDelete(DeleteBehavior.Restrict);
         builder.Entity<Recipe>().Property(recipe => recipe.Steps).HasConversion(value => System.Text.Json.JsonSerializer.Serialize(value, (System.Text.Json.JsonSerializerOptions?)null), value => System.Text.Json.JsonSerializer.Deserialize<List<string>>(value, (System.Text.Json.JsonSerializerOptions?)null)!);
         builder.Entity<Recipe>().Property(recipe => recipe.Steps).Metadata.SetValueComparer(new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>((left, right) => left!.SequenceEqual(right!), value => value.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())), value => value.ToList()));

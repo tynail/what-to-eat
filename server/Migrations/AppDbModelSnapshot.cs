@@ -126,6 +126,28 @@ namespace MealPlanner.Migrations
                     b.ToTable("Meals");
                 });
 
+            modelBuilder.Entity("MealPlanner.MealPreview", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MealId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.ToTable("MealPreviews");
+                });
+
             modelBuilder.Entity("MealPlanner.MealRecipe", b =>
                 {
                     b.Property<int>("Id")

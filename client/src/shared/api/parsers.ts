@@ -177,6 +177,9 @@ function snapshot(value: unknown): Snapshot {
   const row = object(value);
   return {
     mealId: integer(row.mealId),
+    ...(row.previewKey === undefined
+      ? {}
+      : { previewKey: string(row.previewKey) }),
     name: string(row.name),
     description: string(row.description),
     recipes: array(row.recipes).map(snapshotRecipe),
@@ -236,7 +239,17 @@ export const parseMeals = (value: unknown): Meal[] => array(value).map(meal);
 export const parseSnapshots = (value: unknown): Snapshot[] =>
   array(value).map(snapshot);
 export const parseSnapshot = snapshot;
-export const parsePlans = (value: unknown): Plan[] => array(value).map(plan);
+export const parsePlan = plan;
+export function parsePlanPage(value: unknown) {
+  const page = object(value);
+  return {
+    items: array(page.items).map((value) => {
+      const row = object(value);
+      return { week: string(row.week), mealCount: integer(row.mealCount) };
+    }),
+    nextBefore: page.nextBefore === null ? null : string(page.nextBefore),
+  };
+}
 /**
  * Parses an array of household users, preserving order and allowing an empty array.
  * @throws {Error} If the input is not an array or any entry fails validation.

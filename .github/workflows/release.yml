@@ -52,14 +52,8 @@ jobs:
       - run: npm run build --prefix client
       - run: npx playwright install --with-deps chromium
         working-directory: client
-      - name: Start browser fixture
-        working-directory: client
-        run: |
-          npm exec vite preview -- --host 127.0.0.1 --port 5080 > "$RUNNER_TEMP/client-fixture.log" 2>&1 &
-          for i in $(seq 1 30); do curl --fail http://127.0.0.1:5080/ && exit 0; sleep 1; done
-          cat "$RUNNER_TEMP/client-fixture.log"
-          exit 1
-      - run: npm run test:e2e --prefix client
+      - name: Run browser tests against disposable ASP.NET fixture
+        run: pwsh -File scripts/test-e2e.ps1 -SkipBuild
   image:
     needs: verify
     runs-on: ubuntu-latest
