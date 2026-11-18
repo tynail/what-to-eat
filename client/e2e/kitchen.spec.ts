@@ -1,15 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { createApiState, mockApi } from './apiFixture';
 
 test('household invitation, cooking library, planner, history, and keyboard access', async ({
   page,
   browser,
 }, info) => {
-  const state = createApiState();
-  const session = { user: null };
-  const recipeId = state.nextRecipeId;
-  const mealId = state.nextMealId;
-  await mockApi(page, state, session);
   const suffix = `${info.project.name}-${Date.now()}`;
   await page.goto('/');
   await page
@@ -29,7 +23,6 @@ test('household invitation, cooking library, planner, history, and keyboard acce
   const link = await page.getByTestId('household-share-link').inputValue();
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
-  await mockApi(guest, state, { user: null });
   await guest.goto(link);
   await guest.getByTestId('auth-username').fill(`member-${suffix}`);
   await guest.getByTestId('auth-password').fill('MemberOnly!Test42');
@@ -68,7 +61,14 @@ test('household invitation, cooking library, planner, history, and keyboard acce
     .getByTestId('step-row-0')
     .getByTestId('step-text')
     .fill('Boil pasta, then toss with lemon.');
+  const recipeCreated = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/recipes') &&
+      response.request().method() === 'POST' &&
+      response.status() === 201,
+  );
   await page.getByTestId('editor-save').click();
+  const { id: recipeId } = await (await recipeCreated).json();
   const recipeCard = page.getByTestId(`recipe-card-${recipeId}`);
   await expect(recipeCard.getByTestId('card-title')).toHaveText(
     `Lemon pasta ${suffix}`,
@@ -79,6 +79,7 @@ test('household invitation, cooking library, planner, history, and keyboard acce
     .getByTestId('editor-description')
     .fill('A fresh household favorite.');
   await page.getByTestId('editor-save').click();
+  await expect(page.getByTestId('modal')).toHaveCount(0);
   await page.getByTestId('nav-meals').click();
   await page.getByTestId('catalog-add').click();
   await page.getByTestId('editor-name').fill(`Pasta night ${suffix}`);
@@ -90,7 +91,15 @@ test('household invitation, cooking library, planner, history, and keyboard acce
     .getByTestId(`meal-choice-${recipeId}`)
     .getByTestId('meal-recipe-servings')
     .fill('4');
+  const mealCreated = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/meals') &&
+      response.request().method() === 'POST' &&
+      response.status() === 201,
+  );
   await page.getByTestId('editor-save').click();
+  const { id: mealId } = await (await mealCreated).json();
+  await expect(page.getByTestId('modal')).toHaveCount(0);
   await page.getByTestId('nav-week').click();
   await page.getByTestId('planner-count').fill('1');
   await page.getByTestId('planner-generate').click();

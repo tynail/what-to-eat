@@ -1,10 +1,16 @@
 import { useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   api,
   apiParsed,
   parseMeals,
-  parsePlans,
+  ApiError,
+  parsePlan,
+  parsePlanPage,
   parseSnapshot,
   parseSnapshots,
   type Snapshot,
@@ -20,18 +26,35 @@ export function usePlanner() {
     queryKey: ['meals'],
     queryFn: () => apiParsed('/meals', parseMeals),
   });
-  const plans = useQuery({
-    queryKey: ['plans'],
-    queryFn: () => apiParsed('/plans', parsePlans),
+  const [week, setWeek] = useState(monday());
+  const history = useInfiniteQuery({
+    queryKey: ['plan-history'],
+    initialPageParam: '',
+    queryFn: ({ pageParam }) =>
+      apiParsed(
+        pageParam ? `/plans?before=${pageParam}` : '/plans',
+        parsePlanPage,
+      ),
+    getNextPageParam: (page) => page.nextBefore,
+  });
+  const detail = useQuery({
+    queryKey: ['plan', week],
+    queryFn: async () => {
+      try {
+        return await apiParsed(`/plans/${week}`, parsePlan);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
   });
   const queryClient = useQueryClient();
-  const [week, setWeek] = useState(monday());
   const [count, setCount] = useState(5);
   const [excluded, setExcluded] = useState<number[]>([]);
   const [draftState, setDraftState] = useState<PlanDraft>({ kind: 'saved' });
   const epoch = useRef(0);
   const action = useAction();
-  const saved = plans.data?.find((plan) => plan.week === week);
+  const saved = detail.data;
   const draft = draftState.kind === 'draft' ? draftState.meals : null;
   const selection = draft ?? saved?.meals ?? [];
 
@@ -111,7 +134,9 @@ export function usePlanner() {
     const requestEpoch = ++epoch.current;
     return action.run(
       async () => {
-        const next = await apiParsed(`/meals/${id}/snapshot`, parseSnapshot);
+        const next = await apiParsed(`/planner/preview/${id}`, parseSnapshot, {
+          method: 'POST',
+        });
         if (requestEpoch !== epoch.current) return;
         change(
           selection.map((item, position) => (position === index ? next : item)),
@@ -135,9 +160,18 @@ export function usePlanner() {
     return action.run(async () => {
       await api(`/plans/${week}`, {
         method: 'PUT',
-        body: { meals: draftState.meals, version: draftState.baseVersion },
+        body: {
+          references: draftState.meals.map(({ mealId, previewKey }) => ({
+            mealId,
+            previewKey,
+          })),
+          version: draftState.baseVersion,
+        },
       });
-      await queryClient.invalidateQueries({ queryKey: ['plans'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['plan', week] }),
+        queryClient.invalidateQueries({ queryKey: ['plan-history'] }),
+      ]);
       discard();
     });
   }
@@ -153,7 +187,10 @@ export function usePlanner() {
         method: 'DELETE',
       });
       discard();
-      await queryClient.invalidateQueries({ queryKey: ['plans'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['plan', week] }),
+        queryClient.invalidateQueries({ queryKey: ['plan-history'] }),
+      ]);
     });
   }
 
@@ -167,11 +204,14 @@ export function usePlanner() {
     saved,
     selection,
     meals: meals.data ?? [],
-    plans: plans.data ?? [],
+    plans: history.data?.pages.flatMap((page) => page.items) ?? [],
+    hasMoreWeeks: history.hasNextPage,
+    loadingHistory: history.isFetchingNextPage,
+    loadMoreWeeks: history.fetchNextPage,
     busy: action.busy,
     generationDisabled:
-      action.busy || meals.isPending || plans.isPending || !!plans.error,
-    error: action.error || meals.error || plans.error,
+      action.busy || meals.isPending || detail.isPending || !!detail.error,
+    error: action.error || meals.error || detail.error || history.error,
     selectWeek,
     generate,
     reroll,

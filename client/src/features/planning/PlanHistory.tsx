@@ -1,5 +1,5 @@
 import { ArrowRight, CalendarDays } from 'lucide-react';
-import type { Plan } from '../../api';
+import type { PlanSummary } from '../../api';
 import { pretty } from './dates';
 import { useTranslation } from 'react-i18next';
 
@@ -8,7 +8,7 @@ export function PlanHistory({
   plans,
   onSelect,
 }: {
-  plans: Plan[];
+  plans: PlanSummary[];
   onSelect: (week: string) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -22,13 +22,13 @@ export function PlanHistory({
           {plans.map((p) => (
             <button
               className="[font-family:inherit] [font-size:inherit] [line-height:inherit] inline-flex items-center justify-center gap-[8px] [border:1px_solid_#d8dfd6] rounded-[8px] p-[10px_15px] bg-[#fff] text-[#294737] cursor-pointer font-semibold no-underline [&:hover]:bg-[#edf2e8] [&:disabled]:opacity-[0.5] [&:disabled]:cursor-not-allowed [&:focus-visible]:[outline:3px_solid_#bc8c32] [&:focus-visible]:[outline-offset:3px]"
-              key={p.id}
+              key={p.week}
               onClick={() => onSelect(p.week)}
             >
               <CalendarDays size={18} />
               <span>{pretty(p.week, i18n.language)}</span>
               <small className="text-[12px]">
-                {t('mealsCount', { count: p.meals.length })}
+                {t('mealsCount', { count: p.mealCount })}
               </small>
               <ArrowRight size={16} />
             </button>

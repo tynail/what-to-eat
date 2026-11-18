@@ -52,7 +52,10 @@ export function useSettings(me: Me) {
     )
       return;
     return action.run(async () => {
-      await api(`/admin/users/${user.id}/toggle`, { method: 'POST' });
+      await api(`/admin/users/${user.id}/access`, {
+        method: 'PUT',
+        body: { disabled: !user.disabled },
+      });
       await users.refetch();
     });
   }

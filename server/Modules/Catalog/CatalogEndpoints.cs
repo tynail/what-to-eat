@@ -60,10 +60,10 @@ public static class CatalogEndpoints
         return Results.NoContent();
     }
 
-    static async Task<IResult> ListMeals(AppDb db) => Results.Ok((await MealQueries.Summaries(db)).OrderBy(meal => meal.Name));
+    static async Task<IResult> ListMeals(AppDb db) => Results.Ok(await MealQueries.Summaries(db).ToListAsync());
     static async Task<IResult> GetMeal(int id, AppDb db)
     {
-        var meal = (await MealQueries.Summaries(db)).SingleOrDefault(meal => meal.Id == id);
+        var meal = await MealQueries.Summaries(db, id).SingleOrDefaultAsync();
         return meal is null ? Results.NotFound() : Results.Ok(meal);
     }
 
@@ -107,23 +107,17 @@ public static class CatalogEndpoints
 
 public static class MealQueries
 {
+    public static IQueryable<int> Ids(AppDb db) => db.Meals.Where(meal => meal.HouseholdId == 1).Select(meal => meal.Id);
     public static IQueryable<Meal> Full(AppDb db) => db.Meals.Where(meal => meal.HouseholdId == 1).Include(meal => meal.Recipes).ThenInclude(link => link.Recipe).ThenInclude(recipe => recipe.Ingredients);
-    public static async Task<List<MealSummary>> Summaries(AppDb db)
+    public static IQueryable<MealSummary> Summaries(AppDb db, int? id = null)
     {
-        var meals = await db.Meals.Where(meal => meal.HouseholdId == 1)
-            .Include(meal => meal.Recipes)
-            .ThenInclude(link => link.Recipe)
-            .ToListAsync();
+        var meals = db.Meals.AsNoTracking().Where(meal => meal.HouseholdId == 1);
+        if (id.HasValue) meals = meals.Where(meal => meal.Id == id.Value);
 
-        return meals.Select(meal => new MealSummary(
-            meal.Id,
-            meal.Name,
-            meal.Description,
-            meal.Version,
+        return meals.OrderBy(meal => meal.Name).Select(meal => new MealSummary(
+            meal.Id, meal.Name, meal.Description, meal.Version,
             meal.Recipes.OrderBy(link => link.Position)
-                .Select(link => new MealRecipeSummary(link.RecipeId, link.Servings, link.Recipe.Name))
-                .ToList()))
-            .ToList();
+                .Select(link => new MealRecipeSummary(link.RecipeId, link.Servings, link.Recipe.Name)).ToList()));
     }
 }
 

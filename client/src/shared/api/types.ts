@@ -46,6 +46,7 @@ export type SnapshotRecipe = Omit<Recipe, 'id' | 'version'> & {
   recipeId: number;
 };
 export type Snapshot = {
+  previewKey?: string;
   mealId: number;
   name: string;
   description: string;
@@ -57,5 +58,6 @@ export type Plan = {
   version: string;
   meals: Snapshot[];
 };
+export type PlanSummary = Pick<Plan, 'week'> & { mealCount: number };
 export type Me = { id: string; username: string; isAdmin: boolean };
 export type HouseholdUser = { id: string; username: string; disabled: boolean };

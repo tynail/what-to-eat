@@ -45,6 +45,28 @@ public class ApiTests
 {
     static RecipeInput Recipe(string name = "Soup", Guid? version = null) => new(name, "Warm dinner", 2, ["Simmer gently"], [new("Water", 500, "ml", "")], version);
     [Fact]
+    public async Task AccountAllowsNineMistakesThenTemporarilyLocks()
+    {
+        using var f = new KitchenFactory(); using var client = f.CreateClient();
+        using var scope = f.Services.CreateScope(); var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var user = new User { UserName = "lockout-test" };
+        Assert.True((await users.CreateAsync(user, "Testing!Password42")).Succeeded);
+        await KitchenFactory.Csrf(client);
+        for (var i = 0; i < 9; i++)
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { username = user.UserName, password = "wrong" })).StatusCode);
+        using var ninthScope = f.Services.CreateScope();
+        var ninthUsers = ninthScope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        Assert.False(await ninthUsers.IsLockedOutAsync((await ninthUsers.FindByIdAsync(user.Id))!));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { username = user.UserName, password = "wrong" })).StatusCode);
+        using var tenthScope = f.Services.CreateScope();
+        var tenthUsers = tenthScope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var reloaded = (await tenthUsers.FindByIdAsync(user.Id))!;
+        Assert.True(await tenthUsers.IsLockedOutAsync(reloaded));
+        var remaining = (await tenthUsers.GetLockoutEndDateAsync(reloaded))!.Value - DateTimeOffset.UtcNow;
+        Assert.InRange(remaining, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { username = user.UserName, password = "Testing!Password42" })).StatusCode);
+    }
+    [Fact]
     public async Task AuthenticationCsrfAndRolesAreRequired()
     {
         using var f = new KitchenFactory(); using var anonymous = f.CreateClient(); Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/recipes")).StatusCode);
@@ -68,10 +90,79 @@ public class ApiTests
         Assert.Equal(HttpStatusCode.Conflict, (await c.PutAsJsonAsync($"/api/recipes/{r.Id}", Recipe("Stale", r.Version))).StatusCode);
         var meals = await c.GetFromJsonAsync<JsonElement>("/api/meals"); var mv = meals[0].GetProperty("version").GetString(); (await c.DeleteAsync($"/api/meals/{mealId}?version={mv}")).EnsureSuccessStatusCode();
         var recipes = (await c.GetFromJsonAsync<List<MealPlanner.Recipe>>("/api/recipes"))!; (await c.DeleteAsync($"/api/recipes/{r.Id}?version={recipes[0].Version}")).EnsureSuccessStatusCode();
-        var plans = await c.GetFromJsonAsync<JsonElement>("/api/plans"); Assert.Equal("Soup", plans[0].GetProperty("meals")[0].GetProperty("recipes")[0].GetProperty("name").GetString());
-        (await c.DeleteAsync($"/api/plans/{plans[0].GetProperty("id")}?version={plans[0].GetProperty("version").GetString()}")).EnsureSuccessStatusCode();
-        Assert.Equal(0, (await c.GetFromJsonAsync<JsonElement>("/api/plans")).GetArrayLength());
+        var history = await c.GetFromJsonAsync<JsonElement>("/api/plans");
+        Assert.Equal(1, history.GetProperty("items")[0].GetProperty("mealCount").GetInt32());
+        var detail = await c.GetFromJsonAsync<JsonElement>("/api/plans/2026-09-07");
+        Assert.Equal("Soup", detail.GetProperty("meals")[0].GetProperty("recipes")[0].GetProperty("name").GetString());
+        (await c.DeleteAsync($"/api/plans/{detail.GetProperty("id")}?version={detail.GetProperty("version").GetString()}")).EnsureSuccessStatusCode();
+        Assert.Equal(0, (await c.GetFromJsonAsync<JsonElement>("/api/plans")).GetProperty("items").GetArrayLength());
     }
+    [Fact]
+    public async Task LargePreviewSavesByReferenceAfterCatalogEditAndPreservesSavedRows()
+    {
+        using var factory = new KitchenFactory();
+        using var client = await factory.Login();
+        var largeRecipe = Recipe() with { Steps = Enumerable.Repeat(new string('a', 3600), 100).ToList() };
+        var created = await client.PostAsJsonAsync("/api/recipes", largeRecipe);
+        created.EnsureSuccessStatusCode();
+        var recipe = (await created.Content.ReadFromJsonAsync<MealPlanner.Recipe>())!;
+        for (var index = 0; index < 3; index++)
+            (await client.PostAsJsonAsync("/api/meals", new MealInput($"Menu {index}", "", [new(recipe.Id, 4)], null))).EnsureSuccessStatusCode();
+
+        var generated = await client.PostAsJsonAsync("/api/planner/generate", new GenerateInput(3, []));
+        generated.EnsureSuccessStatusCode();
+        Assert.True((await generated.Content.ReadAsByteArrayAsync()).Length > 1_048_576);
+        var preview = (await generated.Content.ReadFromJsonAsync<List<MealSnapshot>>())!;
+        var references = preview.Select(item => new MealReference(item.MealId, item.PreviewKey)).ToList();
+        Assert.All(references, item => Assert.NotNull(item.PreviewKey));
+        (await client.PutAsJsonAsync($"/api/recipes/{recipe.Id}", Recipe("Updated", recipe.Version))).EnsureSuccessStatusCode();
+
+        const string path = "/api/plans/2026-09-07";
+        var input = new SavePlanInput(null, null, references);
+        Assert.True(JsonSerializer.SerializeToUtf8Bytes(input).Length < 1024);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync(path, input)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync(path, input)).StatusCode);
+        var saved = await client.GetFromJsonAsync<JsonElement>(path);
+        var version = saved.GetProperty("version").GetGuid();
+        Assert.Equal(references.Select(item => item.MealId), saved.GetProperty("meals").EnumerateArray().Select(item => item.GetProperty("mealId").GetInt32()));
+        Assert.Equal("Soup", saved.GetProperty("meals")[0].GetProperty("recipes")[0].GetProperty("name").GetString());
+
+        factory.Clock.Advance(TimeSpan.FromDays(8));
+        using var returningClient = await factory.Login();
+        Assert.Equal(HttpStatusCode.Conflict, (await returningClient.PutAsJsonAsync(path, input with { Version = version })).StatusCode);
+        var replacement = await returningClient.PostAsync($"/api/planner/preview/{references[1].MealId}", null);
+        replacement.EnsureSuccessStatusCode();
+        var updated = (await replacement.Content.ReadFromJsonAsync<MealSnapshot>())!;
+        var mixed = new SavePlanInput(null, version, [new(references[0].MealId, null), new(updated.MealId, updated.PreviewKey)]);
+        Assert.Equal(HttpStatusCode.NoContent, (await returningClient.PutAsJsonAsync(path, mixed)).StatusCode);
+        var rows = (await returningClient.GetFromJsonAsync<JsonElement>(path)).GetProperty("meals");
+        Assert.Equal("Soup", rows[0].GetProperty("recipes")[0].GetProperty("name").GetString());
+        Assert.Equal("Updated", rows[1].GetProperty("recipes")[0].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task HistoryPagesContainCountsAndDistinctWeeks()
+    {
+        using var factory = new KitchenFactory();
+        using var client = await factory.Login();
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var first = new DateOnly(2026, 1, 5);
+        for (var index = 0; index < 21; index++)
+            db.Plans.Add(new WeeklyPlan { Week = first.AddDays(7 * index), Entries = [new SnapshotEntry()] });
+        await db.SaveChangesAsync();
+
+        var page = await client.GetFromJsonAsync<JsonElement>("/api/plans");
+        var items = page.GetProperty("items");
+        Assert.Equal(20, items.GetArrayLength());
+        Assert.Equal(1, items[0].GetProperty("mealCount").GetInt32());
+        Assert.False(items[0].TryGetProperty("meals", out _));
+        var cursor = page.GetProperty("nextBefore").GetString();
+        var last = await client.GetFromJsonAsync<JsonElement>($"/api/plans?before={cursor}");
+        Assert.Equal("2026-01-05", Assert.Single(last.GetProperty("items").EnumerateArray()).GetProperty("week").GetString());
+        Assert.Equal(JsonValueKind.Null, last.GetProperty("nextBefore").ValueKind);
+    }
+
     [Fact]
     public async Task InviteAndResetAreSingleUseAndExpire()
     {
@@ -152,7 +243,8 @@ public class ApiTests
     {
         using var f = new KitchenFactory(); using var admin = await f.Login(); using var member = await f.Login(false);
         var me = await member.GetFromJsonAsync<JsonElement>("/api/auth/me"); var id = me.GetProperty("id").GetString();
-        (await admin.PostAsync($"/api/admin/users/{id}/toggle", null)).EnsureSuccessStatusCode();
+        for (var attempt = 0; attempt < 2; attempt++)
+            (await admin.PutAsJsonAsync($"/api/admin/users/{id}/access", new { disabled = true })).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Unauthorized, (await member.GetAsync("/api/recipes")).StatusCode);
         await KitchenFactory.Csrf(member);
         Assert.Equal(HttpStatusCode.Unauthorized, (await member.PostAsJsonAsync("/api/auth/login", new { username = me.GetProperty("username").GetString(), password = "Testing!Password42" })).StatusCode);

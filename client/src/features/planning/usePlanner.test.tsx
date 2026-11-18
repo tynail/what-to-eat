@@ -10,10 +10,17 @@ function setup() {
   const nextWeek = monday(nextWeekDate);
   const harness = queryHarness();
   harness.client.setQueryData(['meals'], [meal]);
-  harness.client.setQueryData(
-    ['plans'],
-    [{ id: 2, week: monday(), version: 'plan-v1', meals: [snapshot] }],
-  );
+  harness.client.setQueryData(['plan', monday()], {
+    id: 2,
+    week: monday(),
+    version: 'plan-v1',
+    meals: [snapshot],
+  });
+  harness.client.setQueryData(['plan', nextWeek], null);
+  harness.client.setQueryData(['plan-history'], {
+    pages: [{ items: [], nextBefore: null }],
+    pageParams: [''],
+  });
   return {
     nextWeek,
     ...harness,
@@ -228,9 +235,12 @@ describe('planner selection lifecycle', () => {
       }),
     );
     expect(result.current.draft?.[0]?.name).toBe('New dinner');
-    expect(client.getQueryData(['plans'])).toEqual([
-      { id: 2, week: monday(), version: 'plan-v1', meals: [snapshot] },
-    ]);
+    expect(client.getQueryData(['plan', monday()])).toEqual({
+      id: 2,
+      week: monday(),
+      version: 'plan-v1',
+      meals: [snapshot],
+    });
   });
 
   it('retains the original concurrency version through later changes and saves it', async () => {
@@ -239,9 +249,14 @@ describe('planner selection lifecycle', () => {
       if (path === '/api/planner/reroll')
         return Response.json({ ...snapshot, mealId: 3 });
       if (init?.method === 'PUT') return new Response(null, { status: 204 });
-      return Response.json([
-        { id: 2, week: monday(), version: 'plan-v3', meals: [snapshot] },
-      ]);
+      if (path === '/api/plans')
+        return Response.json({ items: [], nextBefore: null });
+      return Response.json({
+        id: 2,
+        week: monday(),
+        version: 'plan-v3',
+        meals: [snapshot],
+      });
     });
     vi.stubGlobal(
       'confirm',
@@ -252,10 +267,12 @@ describe('planner selection lifecycle', () => {
       await result.current.generate();
     });
     act(() => {
-      client.setQueryData(
-        ['plans'],
-        [{ id: 2, week: monday(), version: 'plan-v2', meals: [snapshot] }],
-      );
+      client.setQueryData(['plan', monday()], {
+        id: 2,
+        week: monday(),
+        version: 'plan-v2',
+        meals: [snapshot],
+      });
     });
     await waitFor(() => expect(result.current.saved?.version).toBe('plan-v2'));
     await act(async () => {
@@ -272,7 +289,7 @@ describe('planner selection lifecycle', () => {
     if (typeof body !== 'string') throw new Error('Expected JSON save body');
     const payload: unknown = JSON.parse(body);
     expect(payload).toEqual({
-      meals: [{ ...snapshot, mealId: 3 }],
+      references: [{ mealId: 3, previewKey: snapshot.previewKey }],
       version: 'plan-v1',
     });
     expect(result.current.draft).toBeNull();
@@ -283,17 +300,12 @@ describe('planner selection lifecycle', () => {
     const fetch = network(() => Response.json(replacement));
     const { result, client } = setup();
     act(() =>
-      client.setQueryData(
-        ['plans'],
-        [
-          {
-            id: 2,
-            week: monday(),
-            version: 'plan-v1',
-            meals: [snapshot, { ...snapshot, mealId: 2 }],
-          },
-        ],
-      ),
+      client.setQueryData(['plan', monday()], {
+        id: 2,
+        week: monday(),
+        version: 'plan-v1',
+        meals: [snapshot, { ...snapshot, mealId: 2 }],
+      }),
     );
     await waitFor(() => expect(result.current.selection).toHaveLength(2));
     await act(async () => {

@@ -109,6 +109,14 @@ export function Planner() {
         </button>
       )}
       <PlanHistory plans={planner.plans} onSelect={planner.selectWeek} />
+      {planner.hasMoreWeeks && (
+        <button
+          disabled={planner.loadingHistory}
+          onClick={() => void planner.loadMoreWeeks()}
+        >
+          {t('olderWeeks')}
+        </button>
+      )}
       {view && <CookingDetail meal={view} close={() => setView(null)} />}
     </>
   );
